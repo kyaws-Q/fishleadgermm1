@@ -1,6 +1,6 @@
 
 import { Button } from "@/components/ui/button";
-import { FileText, FileSpreadsheet, FilePdf } from "lucide-react";
+import { FileText, FileSpreadsheet, File } from "lucide-react";
 import { useApp } from "@/contexts/AppContext";
 import { toast } from "sonner";
 
@@ -42,7 +42,7 @@ export function ExportButtons() {
         onClick={() => handleExport('pdf')}
         className="flex items-center bg-white hover:bg-gray-50"
       >
-        <FilePdf className="h-4 w-4 mr-2" />
+        <File className="h-4 w-4 mr-2" />
         Export to PDF
       </Button>
     </div>

@@ -43,7 +43,7 @@ export function SpendingChart({ title, type = "bar" }: SpendingChartProps) {
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="name" />
               <YAxis />
-              <Tooltip formatter={(value) => [`$${value.toFixed(2)}`, "Total"]} />
+              <Tooltip formatter={(value: any) => [`$${Number(value).toFixed(2)}`, "Total"]} />
               <Legend />
               <Bar dataKey="value" fill="#0ea5e9">
                 {fishTypeData.map((entry, index) => (
@@ -60,7 +60,7 @@ export function SpendingChart({ title, type = "bar" }: SpendingChartProps) {
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="name" />
               <YAxis />
-              <Tooltip formatter={(value) => [`$${value.toFixed(2)}`, "Total"]} />
+              <Tooltip formatter={(value: any) => [`$${Number(value).toFixed(2)}`, "Total"]} />
               <Legend />
               <Line type="monotone" dataKey="value" stroke="#0ea5e9" activeDot={{ r: 8 }} />
             </LineChart>
@@ -73,7 +73,7 @@ export function SpendingChart({ title, type = "bar" }: SpendingChartProps) {
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="name" />
               <YAxis />
-              <Tooltip formatter={(value) => [`$${value.toFixed(2)}`, "Total"]} />
+              <Tooltip formatter={(value: any) => [`$${Number(value).toFixed(2)}`, "Total"]} />
               <Legend />
               <Area type="monotone" dataKey="value" stroke="#0ea5e9" fill="#bae6fd" />
             </AreaChart>
@@ -97,7 +97,7 @@ export function SpendingChart({ title, type = "bar" }: SpendingChartProps) {
                   <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                 ))}
               </Pie>
-              <Tooltip formatter={(value) => [`$${value.toFixed(2)}`, "Total"]} />
+              <Tooltip formatter={(value: any) => [`$${Number(value).toFixed(2)}`, "Total"]} />
               <Legend />
             </PieChart>
           </ResponsiveContainer>

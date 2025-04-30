@@ -3,6 +3,8 @@ import { DashboardLayout } from "@/components/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ExportButtons } from "@/components/ExportButtons";
 import { FileDown } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { FileText, FileSpreadsheet, File } from "lucide-react";
 
 export default function ExportPage() {
   return (
@@ -69,7 +71,7 @@ export default function ExportPage() {
               easily printed or shared.
             </p>
             <Button variant="outline" onClick={() => {}}>
-              <FilePdf className="h-4 w-4 mr-2" />
+              <File className="h-4 w-4 mr-2" />
               Export to PDF
             </Button>
           </CardContent>
@@ -90,7 +92,3 @@ export default function ExportPage() {
     </DashboardLayout>
   );
 }
-
-// Missing imports for buttons
-import { Button } from "@/components/ui/button";
-import { FileText, FileSpreadsheet, FilePdf } from "lucide-react";
