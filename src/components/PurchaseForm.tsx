@@ -20,6 +20,8 @@ export function PurchaseForm({ open, onClose }: PurchaseFormProps) {
     quantity: 1,
     pricePerUnit: 0,
     purchaseDate: new Date().toISOString().split("T")[0],
+    companyName: "",
+    buyerName: "",
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -43,17 +45,42 @@ export function PurchaseForm({ open, onClose }: PurchaseFormProps) {
       quantity: 1,
       pricePerUnit: 0,
       purchaseDate: new Date().toISOString().split("T")[0],
+      companyName: "",
+      buyerName: "",
     });
   };
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>Add New Purchase</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
           <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <Label htmlFor="companyName">Company Name</Label>
+                <Input
+                  id="companyName"
+                  name="companyName"
+                  value={formData.companyName}
+                  onChange={handleChange}
+                  required
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="buyerName">Buyer Name</Label>
+                <Input
+                  id="buyerName"
+                  name="buyerName"
+                  value={formData.buyerName}
+                  onChange={handleChange}
+                  required
+                />
+              </div>
+            </div>
+
             <div className="grid gap-2">
               <Label htmlFor="fishName">Fish Name</Label>
               <Input
@@ -64,54 +91,60 @@ export function PurchaseForm({ open, onClose }: PurchaseFormProps) {
                 required
               />
             </div>
-            <div className="grid gap-2">
-              <Label htmlFor="sizeKg">Size (KG)</Label>
-              <Input
-                id="sizeKg"
-                name="sizeKg"
-                type="number"
-                step="0.1"
-                min="0.1"
-                value={formData.sizeKg || ""}
-                onChange={handleChange}
-                required
-              />
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <Label htmlFor="sizeKg">Size (KG)</Label>
+                <Input
+                  id="sizeKg"
+                  name="sizeKg"
+                  type="number"
+                  step="0.1"
+                  min="0.1"
+                  value={formData.sizeKg || ""}
+                  onChange={handleChange}
+                  required
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="quantity">Quantity</Label>
+                <Input
+                  id="quantity"
+                  name="quantity"
+                  type="number"
+                  min="1"
+                  value={formData.quantity}
+                  onChange={handleChange}
+                  required
+                />
+              </div>
             </div>
-            <div className="grid gap-2">
-              <Label htmlFor="quantity">Quantity</Label>
-              <Input
-                id="quantity"
-                name="quantity"
-                type="number"
-                min="1"
-                value={formData.quantity}
-                onChange={handleChange}
-                required
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="pricePerUnit">Price Per Unit</Label>
-              <Input
-                id="pricePerUnit"
-                name="pricePerUnit"
-                type="number"
-                step="0.01"
-                min="0.01"
-                value={formData.pricePerUnit || ""}
-                onChange={handleChange}
-                required
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="purchaseDate">Purchase Date</Label>
-              <Input
-                id="purchaseDate"
-                name="purchaseDate"
-                type="date"
-                value={formData.purchaseDate.toString().split("T")[0]}
-                onChange={handleChange}
-                required
-              />
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <Label htmlFor="pricePerUnit">Price Per Unit</Label>
+                <Input
+                  id="pricePerUnit"
+                  name="pricePerUnit"
+                  type="number"
+                  step="0.01"
+                  min="0.01"
+                  value={formData.pricePerUnit || ""}
+                  onChange={handleChange}
+                  required
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="purchaseDate">Purchase Date</Label>
+                <Input
+                  id="purchaseDate"
+                  name="purchaseDate"
+                  type="date"
+                  value={formData.purchaseDate.toString().split("T")[0]}
+                  onChange={handleChange}
+                  required
+                />
+              </div>
             </div>
           </div>
           <DialogFooter>

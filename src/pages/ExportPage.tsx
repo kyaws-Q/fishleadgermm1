@@ -5,8 +5,11 @@ import { ExportButtons } from "@/components/ExportButtons";
 import { FileDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { FileText, FileSpreadsheet, File } from "lucide-react";
+import { useApp } from "@/contexts/AppContext";
 
 export default function ExportPage() {
+  const { companyName } = useApp();
+  
   return (
     <DashboardLayout>
       <div className="mb-8">
@@ -80,7 +83,7 @@ export default function ExportPage() {
       
       <Card>
         <CardHeader>
-          <CardTitle>Quick Export</CardTitle>
+          <CardTitle>Quick Export for {companyName}</CardTitle>
           <CardDescription>
             Export all your purchase data with one click
           </CardDescription>

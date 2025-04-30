@@ -5,14 +5,14 @@ import { useApp } from "@/contexts/AppContext";
 import { toast } from "sonner";
 
 export function ExportButtons() {
-  const { purchases } = useApp();
+  const { purchases, companyName } = useApp();
   
   const handleExport = (format: 'xlsx' | 'csv' | 'pdf') => {
     // In a real app, we'd generate the export file using a library
     // For now, just simulate with a toast
     setTimeout(() => {
       toast.success(`Data exported as ${format.toUpperCase()} format`, {
-        description: `${purchases.length} purchase records exported`
+        description: `${purchases.length} purchase records for ${companyName} exported`
       });
     }, 1000);
   };

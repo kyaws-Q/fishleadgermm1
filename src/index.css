@@ -110,4 +110,42 @@
   .fishledger-gradient-bg {
     background: linear-gradient(135deg, hsl(var(--background)), hsl(var(--muted)));
   }
+  
+  /* Excel-like table styles */
+  .grid-table {
+    @apply w-full border-collapse;
+  }
+  
+  .grid-table th {
+    @apply bg-gray-100 font-semibold text-sm;
+  }
+  
+  /* Different table styles */
+  .bordered-table th, .bordered-table td {
+    @apply border border-gray-200;
+  }
+  
+  .striped-table tr:nth-child(even) {
+    @apply bg-gray-50;
+  }
+  
+  .compact-table th, .compact-table td {
+    @apply py-1 px-2 text-sm;
+  }
+  
+  .modern-table {
+    @apply shadow-sm;
+  }
+  
+  .modern-table th {
+    @apply bg-blue-50 text-blue-700 border-b border-blue-200;
+  }
+  
+  .modern-table td {
+    @apply border-b border-gray-100;
+  }
+  
+  .modern-table tr:hover {
+    @apply bg-blue-50/50;
+  }
 }

@@ -1,6 +1,6 @@
 
 import React, { createContext, useContext, useState, useEffect } from "react";
-import { FishPurchase, User, TimeFrame } from "@/types";
+import { FishPurchase, User, TimeFrame, TableStyle } from "@/types";
 import { 
   initialMockPurchases, 
   calculateTotalSpending,
@@ -17,7 +17,11 @@ interface AppContextType {
   totalSpending: number;
   spendingByFishType: Record<string, number>;
   purchasesByMonth: Record<string, number>;
+  tableStyle: TableStyle;
+  companyName: string;
   setTimeFrame: (timeFrame: TimeFrame) => void;
+  setTableStyle: (style: TableStyle) => void;
+  setCompanyName: (name: string) => void;
   addPurchase: (purchase: Omit<FishPurchase, "id" | "totalPrice">) => void;
   login: (email: string, password: string) => Promise<void>;
   signup: (email: string, password: string, name?: string) => Promise<void>;
@@ -34,6 +38,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [totalSpending, setTotalSpending] = useState(0);
   const [spendingByFishType, setSpendingByFishType] = useState<Record<string, number>>({});
   const [purchasesByMonth, setPurchasesByMonth] = useState<Record<string, number>>({});
+  const [tableStyle, setTableStyle] = useState<TableStyle>("modern");
+  const [companyName, setCompanyName] = useState<string>("FishLedger");
 
   // Check if user is already logged in
   useEffect(() => {
@@ -146,7 +152,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       totalSpending,
       spendingByFishType,
       purchasesByMonth,
+      tableStyle,
+      companyName,
       setTimeFrame,
+      setTableStyle,
+      setCompanyName,
       addPurchase,
       login,
       signup,
