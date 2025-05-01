@@ -1,42 +1,56 @@
-#root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ... keep existing code */
+
+/* Excel-style table */
+.excel-style {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+.excel-style th, .excel-style td {
+  border: 1px solid #ddd;
+  padding: 8px;
+}
+
+.excel-style th {
+  background-color: #f2f2f2;
+  font-weight: bold;
   text-align: center;
 }
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
+.excel-style tr:nth-child(even) {
+  background-color: #f9f9f9;
 }
 
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
+.excel-style tr:hover {
+  background-color: #f1f7ff;
+}
+
+/* Excel-like alignment classes */
+.text-left {
+  text-align: left;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.text-right {
+  text-align: right;
+}
+
+/* Table width styles */
+table.excel-table {
+  min-width: 100%;
+}
+
+@media (min-width: 768px) {
+  table.excel-table th,
+  table.excel-table td {
+    white-space: nowrap;
   }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
-}
-
-.card {
-  padding: 2em;
-}
-
-.read-the-docs {
-  color: #888;
 }

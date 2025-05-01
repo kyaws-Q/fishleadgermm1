@@ -1,145 +1,121 @@
 
-import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 import { useApp } from "@/contexts/AppContext";
-import { 
-  LayoutDashboard, 
-  ShoppingCart, 
-  BarChart3, 
-  FileDown, 
-  Settings, 
+import { Link, useLocation } from "react-router-dom";
+import {
+  LayoutDashboard,
+  ShoppingCart,
+  BarChart4,
+  FileDown,
+  Settings,
   LogOut,
-  User
+  Ship,
 } from "lucide-react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 export function Sidebar() {
+  const { user, logout } = useApp();
   const location = useLocation();
-  const { user, logout, companyName } = useApp();
-  
+
+  const isActive = (path: string) => {
+    return location.pathname === path;
+  };
+
+  if (!user) {
+    return null;
+  }
+
   const navItems = [
-    { 
-      name: "Dashboard", 
-      path: "/dashboard", 
-      icon: <LayoutDashboard className="h-5 w-5" /> 
+    {
+      name: "Dashboard",
+      href: "/dashboard",
+      icon: LayoutDashboard,
     },
-    { 
-      name: "Purchases", 
-      path: "/purchases", 
-      icon: <ShoppingCart className="h-5 w-5" /> 
+    {
+      name: "Purchases",
+      href: "/purchases",
+      icon: ShoppingCart,
     },
-    { 
-      name: "Analytics", 
-      path: "/analytics", 
-      icon: <BarChart3 className="h-5 w-5" /> 
+    {
+      name: "Shipments",
+      href: "/shipments",
+      icon: Ship,
     },
-    { 
-      name: "Export Data", 
-      path: "/export", 
-      icon: <FileDown className="h-5 w-5" /> 
+    {
+      name: "Analytics",
+      href: "/analytics",
+      icon: BarChart4,
     },
-    { 
-      name: "Settings", 
-      path: "/settings", 
-      icon: <Settings className="h-5 w-5" /> 
-    }
+    {
+      name: "Export",
+      href: "/export",
+      icon: FileDown,
+    },
+    {
+      name: "Settings",
+      href: "/settings",
+      icon: Settings,
+    },
   ];
 
   return (
-    <div className="bg-white border-r h-screen w-64 p-5 flex flex-col fixed">
-      {/* Profile Section */}
-      <div className="flex items-center gap-3 mb-8">
-        <Avatar className="h-10 w-10 bg-primary text-primary-foreground">
-          <AvatarImage src="" />
-          <AvatarFallback>{user?.name?.charAt(0) || "U"}</AvatarFallback>
-        </Avatar>
-        <div className="flex flex-col">
-          <p className="font-medium text-sm">{user?.name || "User"}</p>
-          <p className="text-xs text-muted-foreground">{companyName || "FishLedger"}</p>
+    <div className="min-h-screen bg-white border-r">
+      {/* App Logo & Title */}
+      <div className="p-4 border-b">
+        <Link to="/" className="flex items-center gap-2">
+          <img
+            src="/fishledger-logo.svg"
+            alt="FishLedger Logo"
+            className="h-8 w-8"
+          />
+          <h1 className="font-bold text-xl">FishLedger</h1>
+        </Link>
+      </div>
+
+      {/* Navigation */}
+      <nav className="p-2">
+        <ul className="space-y-1">
+          {navItems.map((item) => (
+            <li key={item.name}>
+              <Link to={item.href}>
+                <Button
+                  variant={isActive(item.href) ? "default" : "ghost"}
+                  className={cn(
+                    "w-full justify-start",
+                    isActive(item.href)
+                      ? "bg-primary text-primary-foreground"
+                      : "hover:bg-muted hover:text-foreground"
+                  )}
+                >
+                  <item.icon className="mr-2 h-4 w-4" />
+                  {item.name}
+                </Button>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </nav>
+
+      {/* User Section */}
+      <div className="absolute bottom-0 w-full p-4 border-t">
+        <div className="flex items-center justify-between">
+          <div className="truncate">
+            <p className="font-medium truncate">
+              {user.name || user.email}
+            </p>
+            <p className="text-sm text-muted-foreground truncate">
+              {user.email}
+            </p>
+          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={logout}
+            title="Log out"
+          >
+            <LogOut className="h-5 w-5" />
+          </Button>
         </div>
-      </div>
-      
-      {/* Main Categories */}
-      <div className="mb-6">
-        <p className="text-xs font-medium text-muted-foreground mb-3 px-3 uppercase">
-          Main
-        </p>
-        <nav className="space-y-1">
-          {navItems.slice(0, 2).map((item) => (
-            <Link
-              key={item.path}
-              to={item.path}
-              className={cn(
-                "flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors",
-                location.pathname === item.path
-                  ? "bg-primary text-primary-foreground"
-                  : "text-foreground hover:bg-muted"
-              )}
-            >
-              {item.icon}
-              <span className="ml-3">{item.name}</span>
-            </Link>
-          ))}
-        </nav>
-      </div>
-      
-      {/* Tools Categories */}
-      <div className="mb-6">
-        <p className="text-xs font-medium text-muted-foreground mb-3 px-3 uppercase">
-          Tools
-        </p>
-        <nav className="space-y-1">
-          {navItems.slice(2, 4).map((item) => (
-            <Link
-              key={item.path}
-              to={item.path}
-              className={cn(
-                "flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors",
-                location.pathname === item.path
-                  ? "bg-primary text-primary-foreground"
-                  : "text-foreground hover:bg-muted"
-              )}
-            >
-              {item.icon}
-              <span className="ml-3">{item.name}</span>
-            </Link>
-          ))}
-        </nav>
-      </div>
-      
-      {/* Settings */}
-      <div className="mb-6">
-        <p className="text-xs font-medium text-muted-foreground mb-3 px-3 uppercase">
-          Preferences
-        </p>
-        <nav className="space-y-1">
-          {navItems.slice(4).map((item) => (
-            <Link
-              key={item.path}
-              to={item.path}
-              className={cn(
-                "flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors",
-                location.pathname === item.path
-                  ? "bg-primary text-primary-foreground"
-                  : "text-foreground hover:bg-muted"
-              )}
-            >
-              {item.icon}
-              <span className="ml-3">{item.name}</span>
-            </Link>
-          ))}
-        </nav>
-      </div>
-      
-      {/* User Profile at Bottom */}
-      <div className="mt-auto border-t pt-4">
-        <button
-          onClick={logout}
-          className="flex items-center w-full px-3 py-2 rounded-md text-sm font-medium text-rose-600 hover:bg-rose-50 transition-colors"
-        >
-          <LogOut className="h-5 w-5" />
-          <span className="ml-3">Log Out</span>
-        </button>
       </div>
     </div>
   );
