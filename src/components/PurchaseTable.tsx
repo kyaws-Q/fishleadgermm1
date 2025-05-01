@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useApp } from "@/contexts/AppContext";
 import { FishPurchase, SortDirection, DateFilter } from "@/types";
@@ -15,7 +14,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowDown, ArrowUp, Search, SlidersHorizontal, Calendar, Download } from "lucide-react";
+import { ArrowDown, ArrowUp, Search, Filter, Calendar, Download } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { DatePicker } from "@/components/ui/date-picker";
 import { format, isAfter, isBefore, isEqual } from "date-fns";
@@ -30,6 +29,7 @@ export function PurchaseTable() {
   const [dateFilter, setDateFilter] = useState<DateFilter>("all");
   const [startDate, setStartDate] = useState<Date | undefined>(undefined);
   const [endDate, setEndDate] = useState<Date | undefined>(undefined);
+  const [groupedPurchases, setGroupedPurchases] = useState<Record<string, FishPurchase[]>>({});
   
   // Update filtered purchases when purchases change
   useEffect(() => {
@@ -68,6 +68,17 @@ export function PurchaseTable() {
     filtered = sortPurchases(filtered, sortField, sortDirection);
     
     setFilteredPurchases(filtered);
+    
+    // Group purchases by company and date
+    const grouped: Record<string, FishPurchase[]> = {};
+    filtered.forEach(purchase => {
+      const key = `${purchase.companyName || 'Unknown'}-${purchase.purchaseDate}-${purchase.buyerName || 'Unknown'}`;
+      if (!grouped[key]) {
+        grouped[key] = [];
+      }
+      grouped[key].push(purchase);
+    });
+    setGroupedPurchases(grouped);
   };
 
   // Filter by date helper function
@@ -160,7 +171,7 @@ export function PurchaseTable() {
 
   // Format the date
   const formatDate = (dateString: string | Date) => {
-    return format(new Date(dateString), 'MMM d, yyyy');
+    return format(new Date(dateString), 'MM/dd/yyyy');
   };
   
   // Handle search
@@ -173,39 +184,33 @@ export function PurchaseTable() {
     setDateFilter(value as DateFilter);
   };
 
-  // Calculate grand total
-  const calculateGrandTotal = () => {
-    return filteredPurchases.reduce((total, purchase) => total + purchase.totalPrice, 0);
+  // Calculate grand total for a group of purchases
+  const calculateGroupTotal = (purchases: FishPurchase[]) => {
+    return purchases.reduce((total, purchase) => total + purchase.totalPrice, 0);
   };
 
   // Get table class based on style
   const getTableClass = () => {
     switch (tableStyle) {
       case "striped":
-        return "grid-table striped-table";
+        return "excel-table striped-table border-collapse";
       case "bordered":
-        return "grid-table bordered-table";
+        return "excel-table bordered-table border-collapse";
       case "compact":
-        return "grid-table compact-table";
+        return "excel-table compact-table border-collapse";
       case "modern":
-        return "grid-table modern-table";
+        return "excel-table modern-table border-collapse";
       case "excel":
-        return "grid-table excel-table";
+        return "excel-table excel-style border-collapse";
       default:
-        return "grid-table";
+        return "excel-table excel-style border-collapse";
     }
   };
 
   return (
-    <div className="fishledger-table-container">
-      {/* Table Header with Company Name */}
-      <div className="bg-blue-50 p-4 border-b border-blue-200 flex flex-col items-center">
-        <h2 className="text-xl font-bold text-blue-800">{companyName}</h2>
-        <p className="text-sm text-blue-600">Purchase Records</p>
-      </div>
-      
+    <div className="fishledger-table-container space-y-8">
       {/* Search and Filter Controls */}
-      <div className="p-4 border-b flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="p-4 border rounded-lg bg-white flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div className="flex flex-wrap items-center gap-3 w-full">
           <div className="relative w-full sm:w-64">
             <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -253,110 +258,65 @@ export function PurchaseTable() {
         </div>
       </div>
       
-      {/* Excel-like Table */}
-      <div className="overflow-x-auto">
-        <Table className={getTableClass()}>
-          <TableHeader>
-            <TableRow>
-              <TableHead 
-                className="cursor-pointer"
-                onClick={() => handleSort("companyName")}
-              >
-                Company {sortField === "companyName" && (
-                  sortDirection === "asc" ? <ArrowUp className="inline h-4 w-4" /> : <ArrowDown className="inline h-4 w-4" />
-                )}
-              </TableHead>
-              <TableHead 
-                className="cursor-pointer"
-                onClick={() => handleSort("buyerName")}
-              >
-                Buyer {sortField === "buyerName" && (
-                  sortDirection === "asc" ? <ArrowUp className="inline h-4 w-4" /> : <ArrowDown className="inline h-4 w-4" />
-                )}
-              </TableHead>
-              <TableHead 
-                className="cursor-pointer"
-                onClick={() => handleSort("fishName")}
-              >
-                Fish Name {sortField === "fishName" && (
-                  sortDirection === "asc" ? <ArrowUp className="inline h-4 w-4" /> : <ArrowDown className="inline h-4 w-4" />
-                )}
-              </TableHead>
-              <TableHead 
-                className="cursor-pointer text-right"
-                onClick={() => handleSort("sizeKg")}
-              >
-                Size (KG) {sortField === "sizeKg" && (
-                  sortDirection === "asc" ? <ArrowUp className="inline h-4 w-4" /> : <ArrowDown className="inline h-4 w-4" />
-                )}
-              </TableHead>
-              <TableHead 
-                className="cursor-pointer text-right"
-                onClick={() => handleSort("quantity")}
-              >
-                Quantity {sortField === "quantity" && (
-                  sortDirection === "asc" ? <ArrowUp className="inline h-4 w-4" /> : <ArrowDown className="inline h-4 w-4" />
-                )}
-              </TableHead>
-              <TableHead 
-                className="cursor-pointer text-right"
-                onClick={() => handleSort("pricePerUnit")}
-              >
-                Price/Unit {sortField === "pricePerUnit" && (
-                  sortDirection === "asc" ? <ArrowUp className="inline h-4 w-4" /> : <ArrowDown className="inline h-4 w-4" />
-                )}
-              </TableHead>
-              <TableHead 
-                className="cursor-pointer"
-                onClick={() => handleSort("purchaseDate")}
-              >
-                Purchase Date {sortField === "purchaseDate" && (
-                  sortDirection === "asc" ? <ArrowUp className="inline h-4 w-4" /> : <ArrowDown className="inline h-4 w-4" />
-                )}
-              </TableHead>
-              <TableHead 
-                className="cursor-pointer text-right"
-                onClick={() => handleSort("totalPrice")}
-              >
-                Total Price {sortField === "totalPrice" && (
-                  sortDirection === "asc" ? <ArrowUp className="inline h-4 w-4" /> : <ArrowDown className="inline h-4 w-4" />
-                )}
-              </TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredPurchases.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={8} className="text-center py-8">
-                  {searchQuery || dateFilter !== "all" ? "No matching purchases found." : "No purchase records yet."}
-                </TableCell>
-              </TableRow>
-            ) : (
-              filteredPurchases.map((purchase) => (
-                <TableRow key={purchase.id}>
-                  <TableCell>{purchase.companyName || "-"}</TableCell>
-                  <TableCell>{purchase.buyerName || "-"}</TableCell>
-                  <TableCell className="font-medium">{purchase.fishName}</TableCell>
-                  <TableCell className="text-right">{purchase.sizeKg.toFixed(1)}</TableCell>
-                  <TableCell className="text-right">{purchase.quantity}</TableCell>
-                  <TableCell className="text-right">${purchase.pricePerUnit.toFixed(2)}</TableCell>
-                  <TableCell>{formatDate(purchase.purchaseDate)}</TableCell>
-                  <TableCell className="text-right font-medium">${purchase.totalPrice?.toFixed(2)}</TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-          <TableFooter>
-            <TableRow>
-              <TableCell colSpan={7} className="text-right font-bold">Grand Total:</TableCell>
-              <TableCell className="text-right font-bold">${calculateGrandTotal().toFixed(2)}</TableCell>
-            </TableRow>
-          </TableFooter>
-        </Table>
-      </div>
+      {/* Purchase Tables by Group */}
+      {Object.entries(groupedPurchases).length === 0 ? (
+        <div className="bg-white p-8 text-center rounded-lg border">
+          {searchQuery || dateFilter !== "all" ? "No matching purchases found." : "No purchase records yet."}
+        </div>
+      ) : (
+        Object.entries(groupedPurchases).map(([groupKey, groupPurchases], index) => {
+          const [companyName, purchaseDate, buyerName] = groupKey.split('-');
+          return (
+            <div key={groupKey} className="overflow-hidden border rounded-lg bg-white">
+              {/* Company Header */}
+              <div className="border-b bg-blue-50 text-center p-3">
+                <h3 className="font-bold text-blue-800 text-xl">{companyName}</h3>
+              </div>
+              
+              {/* Date and Buyer */}
+              <div className="border-b p-3 flex justify-between items-center">
+                <span>Date: {formatDate(groupPurchases[0].purchaseDate)}</span>
+                <span>Buyer: {buyerName}</span>
+              </div>
+              
+              {/* Excel-like Table */}
+              <div className="overflow-x-auto">
+                <Table className={getTableClass()}>
+                  <TableHeader>
+                    <TableRow className="bg-gray-100 border-b border-gray-300">
+                      <TableHead className="font-bold border-x border-gray-300 text-left">Fish Name</TableHead>
+                      <TableHead className="font-bold border-x border-gray-300 text-center">Size (KG)</TableHead>
+                      <TableHead className="font-bold border-x border-gray-300 text-center">Quantity</TableHead>
+                      <TableHead className="font-bold border-x border-gray-300 text-right">Price/Unit</TableHead>
+                      <TableHead className="font-bold border-x border-gray-300 text-right">Total</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {groupPurchases.map((purchase) => (
+                      <TableRow key={purchase.id} className="border-b border-gray-300">
+                        <TableCell className="font-medium border-x border-gray-300 text-left">{purchase.fishName}</TableCell>
+                        <TableCell className="border-x border-gray-300 text-center">{purchase.sizeKg.toFixed(1)}</TableCell>
+                        <TableCell className="border-x border-gray-300 text-center">{purchase.quantity}</TableCell>
+                        <TableCell className="border-x border-gray-300 text-right">${purchase.pricePerUnit.toFixed(2)}</TableCell>
+                        <TableCell className="border-x border-gray-300 text-right">${purchase.totalPrice.toFixed(2)}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                  <TableFooter>
+                    <TableRow className="bg-gray-100 font-bold">
+                      <TableCell colSpan={4} className="border-x border-gray-300 text-right">Grand Total:</TableCell>
+                      <TableCell className="border-x border-gray-300 text-right">${calculateGroupTotal(groupPurchases).toFixed(2)}</TableCell>
+                    </TableRow>
+                  </TableFooter>
+                </Table>
+              </div>
+            </div>
+          );
+        })
+      )}
       
       {filteredPurchases.length > 0 && (
-        <div className="p-4 border-t flex justify-between items-center">
+        <div className="p-4 bg-white rounded-lg border flex justify-between items-center">
           <div className="text-sm text-muted-foreground">
             Showing {filteredPurchases.length} of {purchases.length} purchases
           </div>

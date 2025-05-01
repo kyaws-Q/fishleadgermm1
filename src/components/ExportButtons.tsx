@@ -37,22 +37,47 @@ export function ExportButtons() {
   // Export to CSV function
   const exportToCSV = (data: FishPurchase[], companyName: string) => {
     try {
-      // CSV Header
-      let csvContent = "Company,Buyer,Fish Name,Size (KG),Quantity,Price Per Unit,Purchase Date,Total Price\n";
+      // Group purchases by company, date, and buyer
+      const groupedData: Record<string, FishPurchase[]> = {};
+      data.forEach(purchase => {
+        const key = `${purchase.companyName || 'Unknown'}-${purchase.purchaseDate}-${purchase.buyerName || 'Unknown'}`;
+        if (!groupedData[key]) {
+          groupedData[key] = [];
+        }
+        groupedData[key].push(purchase);
+      });
       
-      // Add rows
-      data.forEach(item => {
-        const row = [
-          item.companyName || '',
-          item.buyerName || '',
-          item.fishName,
-          item.sizeKg,
-          item.quantity,
-          item.pricePerUnit,
-          item.purchaseDate,
-          item.totalPrice
-        ].join(',');
-        csvContent += row + "\n";
+      // CSV Content
+      let csvContent = "";
+      
+      // Process each group
+      Object.entries(groupedData).forEach(([groupKey, groupPurchases], index) => {
+        const [company, date, buyer] = groupKey.split('-');
+        
+        // Add company header
+        csvContent += `"${company}"\n`;
+        
+        // Add date and buyer
+        csvContent += `"Date: ${new Date(date).toLocaleDateString()}","","","","Buyer: ${buyer}"\n`;
+        
+        // Add headers
+        csvContent += "Fish Name,Size (KG),Quantity,Price Per Unit,Total Price\n";
+        
+        // Add data rows
+        groupPurchases.forEach(item => {
+          const row = [
+            item.fishName,
+            item.sizeKg.toFixed(1),
+            item.quantity,
+            item.pricePerUnit.toFixed(2),
+            item.totalPrice.toFixed(2)
+          ].join(',');
+          csvContent += row + "\n";
+        });
+        
+        // Add grand total
+        const grandTotal = groupPurchases.reduce((total, item) => total + item.totalPrice, 0);
+        csvContent += `"","","","Grand Total",${grandTotal.toFixed(2)}\n\n`;
       });
       
       // Create download link
@@ -75,35 +100,146 @@ export function ExportButtons() {
     }
   };
   
-  // Export to Excel function (simplified without actual Excel formatting)
+  // Export to Excel function with proper formatting
   const exportToExcel = (data: FishPurchase[], companyName: string) => {
     try {
-      // In a real app, we'd use a library like xlsx or exceljs
-      // For this demo, we'll create a CSV with Excel extension
-      let csvContent = "Company,Buyer,Fish Name,Size (KG),Quantity,Price Per Unit,Purchase Date,Total Price\n";
-      
-      // Add rows
-      data.forEach(item => {
-        const row = [
-          item.companyName || '',
-          item.buyerName || '',
-          item.fishName,
-          item.sizeKg,
-          item.quantity,
-          item.pricePerUnit,
-          item.purchaseDate,
-          item.totalPrice
-        ].join(',');
-        csvContent += row + "\n";
+      // Group purchases by company, date, and buyer
+      const groupedData: Record<string, FishPurchase[]> = {};
+      data.forEach(purchase => {
+        const key = `${purchase.companyName || 'Unknown'}-${purchase.purchaseDate}-${purchase.buyerName || 'Unknown'}`;
+        if (!groupedData[key]) {
+          groupedData[key] = [];
+        }
+        groupedData[key].push(purchase);
       });
       
+      // In real implementation, we'd use a proper Excel library like ExcelJS
+      // For this simplified version, we'll create an HTML table that can be opened in Excel
+      
+      let htmlContent = `
+        <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel">
+        <head>
+          <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+          <!--[if gte mso 9]>
+          <xml>
+            <x:ExcelWorkbook>
+              <x:ExcelWorksheets>
+                <x:ExcelWorksheet>
+                  <x:Name>Purchase Records</x:Name>
+                  <x:WorksheetOptions>
+                    <x:DisplayGridlines/>
+                  </x:WorksheetOptions>
+                </x:ExcelWorksheet>
+              </x:ExcelWorksheets>
+            </x:ExcelWorkbook>
+          </xml>
+          <![endif]-->
+          <style>
+            table {
+              border-collapse: collapse;
+              width: 100%;
+            }
+            th, td {
+              border: 1px solid #000;
+              padding: 8px;
+            }
+            .company-header {
+              text-align: center;
+              font-weight: bold;
+              background-color: #e6f2ff;
+              font-size: 16px;
+            }
+            .date-buyer-row {
+              background-color: #f5f5f5;
+            }
+            .date-cell {
+              text-align: left;
+            }
+            .buyer-cell {
+              text-align: right;
+            }
+            .header-row {
+              background-color: #d9d9d9;
+              font-weight: bold;
+            }
+            .fish-name {
+              text-align: left;
+            }
+            .size-kg, .quantity {
+              text-align: center;
+            }
+            .price, .total {
+              text-align: right;
+            }
+            .total-row {
+              background-color: #f0f0f0;
+              font-weight: bold;
+            }
+            .total-label {
+              text-align: right;
+            }
+            .total-value {
+              text-align: right;
+            }
+          </style>
+        </head>
+        <body>
+      `;
+      
+      Object.entries(groupedData).forEach(([groupKey, groupPurchases], index) => {
+        const [company, date, buyer] = groupKey.split('-');
+        const formattedDate = new Date(date).toLocaleDateString();
+        const grandTotal = groupPurchases.reduce((total, item) => total + item.totalPrice, 0);
+        
+        htmlContent += `
+          <table>
+            <tr>
+              <td colspan="5" class="company-header">${company}</td>
+            </tr>
+            <tr class="date-buyer-row">
+              <td colspan="2" class="date-cell">Date: ${formattedDate}</td>
+              <td colspan="3" class="buyer-cell">Buyer: ${buyer}</td>
+            </tr>
+            <tr class="header-row">
+              <th>Fish Name</th>
+              <th>Size (KG)</th>
+              <th>Quantity</th>
+              <th>Price/Unit</th>
+              <th>Total</th>
+            </tr>
+        `;
+        
+        groupPurchases.forEach(item => {
+          htmlContent += `
+            <tr>
+              <td class="fish-name">${item.fishName}</td>
+              <td class="size-kg">${item.sizeKg.toFixed(1)}</td>
+              <td class="quantity">${item.quantity}</td>
+              <td class="price">$${item.pricePerUnit.toFixed(2)}</td>
+              <td class="total">$${item.totalPrice.toFixed(2)}</td>
+            </tr>
+          `;
+        });
+        
+        htmlContent += `
+            <tr class="total-row">
+              <td colspan="4" class="total-label">Grand Total:</td>
+              <td class="total-value">$${grandTotal.toFixed(2)}</td>
+            </tr>
+          </table>
+          <br>
+        `;
+      });
+      
+      htmlContent += `</body></html>`;
+      
       // Create download link
-      const blob = new Blob([csvContent], { type: 'application/vnd.ms-excel' });
+      const blob = new Blob([htmlContent], { type: 'application/vnd.ms-excel' });
       const url = URL.createObjectURL(blob);
       
       // Create temporary link and trigger download
       const link = document.createElement("a");
-      const fileName = `${companyName.replace(/\s+/g, '_')}_Purchases_${new Date().toISOString().split('T')[0]}.xlsx`;
+      const fileName = `${companyName.replace(/\s+/g, '_')}_Purchases_${new Date().toISOString().split('T')[0]}.xls`;
       link.setAttribute("href", url);
       link.setAttribute("download", fileName);
       document.body.appendChild(link);
@@ -117,11 +253,19 @@ export function ExportButtons() {
     }
   };
   
-  // Export to PDF function (simplified)
+  // Export to PDF function (improved with better formatting)
   const exportToPDF = (data: FishPurchase[], companyName: string) => {
     try {
-      // In a real app, we'd use a library like jspdf or pdfmake
-      // For this demo, we'll create a simple HTML and print it to PDF
+      // Group purchases by company, date, and buyer
+      const groupedData: Record<string, FishPurchase[]> = {};
+      data.forEach(purchase => {
+        const key = `${purchase.companyName || 'Unknown'}-${purchase.purchaseDate}-${purchase.buyerName || 'Unknown'}`;
+        if (!groupedData[key]) {
+          groupedData[key] = [];
+        }
+        groupedData[key].push(purchase);
+      });
+      
       const printWindow = window.open('', '_blank');
       if (!printWindow) {
         toast.error("Please allow pop-ups to download PDF");
@@ -134,62 +278,112 @@ export function ExportButtons() {
           <head>
             <title>${companyName} - Purchase Records</title>
             <style>
-              body { font-family: Arial, sans-serif; }
-              h1 { text-align: center; color: #0284c7; }
-              table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-              th { background-color: #0284c7; color: white; padding: 8px; text-align: left; }
-              td { padding: 8px; border-bottom: 1px solid #ddd; }
+              body { 
+                font-family: Arial, sans-serif; 
+                margin: 20px;
+              }
+              h1 { 
+                text-align: center; 
+                color: #0284c7; 
+                margin-bottom: 5px;
+              }
+              .subtitle {
+                text-align: center;
+                margin-bottom: 30px;
+                color: #64748b;
+              }
+              table { 
+                width: 100%; 
+                border-collapse: collapse; 
+                margin-bottom: 30px;
+              }
+              th { 
+                background-color: #e2e8f0; 
+                padding: 8px; 
+                text-align: left;
+                border: 1px solid #94a3b8;
+              }
+              td { 
+                padding: 8px; 
+                border: 1px solid #94a3b8;
+              }
+              .company-header {
+                text-align: center; 
+                font-size: 18px;
+                font-weight: bold; 
+                padding: 10px; 
+                background-color: #dbeafe;
+                border: 1px solid #93c5fd;
+              }
+              .date-buyer-row {
+                background-color: #f1f5f9;
+              }
               .text-right { text-align: right; }
-              .total-row { font-weight: bold; border-top: 2px solid #0284c7; }
+              .text-center { text-align: center; }
+              .total-row { 
+                font-weight: bold; 
+                background-color: #f1f5f9;
+              }
+              .page-break {
+                page-break-after: always;
+              }
+              @media print {
+                .no-break { page-break-inside: avoid; }
+              }
             </style>
           </head>
           <body>
-            <h1>${companyName} - Purchase Records</h1>
-            <p>Generated on ${new Date().toLocaleDateString()}</p>
-            <table>
-              <thead>
-                <tr>
-                  <th>Company</th>
-                  <th>Buyer</th>
-                  <th>Fish Name</th>
-                  <th class="text-right">Size (KG)</th>
-                  <th class="text-right">Quantity</th>
-                  <th class="text-right">Price/Unit</th>
-                  <th>Purchase Date</th>
-                  <th class="text-right">Total Price</th>
-                </tr>
-              </thead>
-              <tbody>
+            <h1>${companyName}</h1>
+            <p class="subtitle">Purchase Records - Generated on ${new Date().toLocaleDateString()}</p>
       `);
       
-      // Add table rows
-      data.forEach(item => {
-        const date = new Date(item.purchaseDate).toLocaleDateString();
+      Object.entries(groupedData).forEach(([groupKey, groupPurchases], index) => {
+        const [company, date, buyer] = groupKey.split('-');
+        const formattedDate = new Date(date).toLocaleDateString();
+        const grandTotal = groupPurchases.reduce((total, item) => total + item.totalPrice, 0);
+        
         printWindow.document.write(`
-          <tr>
-            <td>${item.companyName || '-'}</td>
-            <td>${item.buyerName || '-'}</td>
-            <td>${item.fishName}</td>
-            <td class="text-right">${item.sizeKg.toFixed(1)}</td>
-            <td class="text-right">${item.quantity}</td>
-            <td class="text-right">$${item.pricePerUnit.toFixed(2)}</td>
-            <td>${date}</td>
-            <td class="text-right">$${item.totalPrice.toFixed(2)}</td>
-          </tr>
+          <div class="no-break">
+            <table>
+              <tr>
+                <td colspan="5" class="company-header">${company}</td>
+              </tr>
+              <tr class="date-buyer-row">
+                <td colspan="2">Date: ${formattedDate}</td>
+                <td colspan="3" class="text-right">Buyer: ${buyer}</td>
+              </tr>
+              <tr>
+                <th>Fish Name</th>
+                <th class="text-center">Size (KG)</th>
+                <th class="text-center">Quantity</th>
+                <th class="text-right">Price/Unit</th>
+                <th class="text-right">Total</th>
+              </tr>
+        `);
+        
+        groupPurchases.forEach(item => {
+          printWindow.document.write(`
+            <tr>
+              <td>${item.fishName}</td>
+              <td class="text-center">${item.sizeKg.toFixed(1)}</td>
+              <td class="text-center">${item.quantity}</td>
+              <td class="text-right">$${item.pricePerUnit.toFixed(2)}</td>
+              <td class="text-right">$${item.totalPrice.toFixed(2)}</td>
+            </tr>
+          `);
+        });
+        
+        printWindow.document.write(`
+              <tr class="total-row">
+                <td colspan="4" class="text-right">Grand Total:</td>
+                <td class="text-right">$${grandTotal.toFixed(2)}</td>
+              </tr>
+            </table>
+          </div>
         `);
       });
       
-      // Add grand total
-      const grandTotal = data.reduce((total, item) => total + item.totalPrice, 0);
       printWindow.document.write(`
-              </tbody>
-              <tfoot>
-                <tr class="total-row">
-                  <td colspan="7" class="text-right">Grand Total:</td>
-                  <td class="text-right">$${grandTotal.toFixed(2)}</td>
-                </tr>
-              </tfoot>
-            </table>
           </body>
         </html>
       `);
