@@ -14,7 +14,7 @@
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
 
-    --primary: 196 100% 47%;
+    --primary: 255 70% 70%;
     --primary-foreground: 210 40% 98%;
 
     --secondary: 210 40% 96.1%;
@@ -31,13 +31,13 @@
 
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
-    --ring: 196 100% 47%;
+    --ring: 255 70% 70%;
 
     --radius: 0.5rem;
 
     --sidebar-background: 210 40% 98%;
     --sidebar-foreground: 222.2 84% 4.9%;
-    --sidebar-primary: 196 100% 47%;
+    --sidebar-primary: 255 70% 70%;
     --sidebar-primary-foreground: 210 40% 98%;
     --sidebar-accent: 196 80% 92%;
     --sidebar-accent-foreground: 222.2 47.4% 11.2%;
@@ -178,5 +178,30 @@
   .excel-table tfoot td {
     @apply border border-[#B7C9E0] py-2;
     background-image: linear-gradient(to bottom, #F5F8FC, #E9EFF8);
+  }
+
+  /* Calendar styles */
+  .react-calendar {
+    @apply bg-white rounded-lg p-2 shadow-sm;
+  }
+  
+  .task-item {
+    @apply relative pl-6 py-2 before:absolute before:left-0 before:top-3 before:w-4 before:h-4 before:rounded-full;
+  }
+  
+  .task-item.task-primary {
+    @apply before:bg-primary;
+  }
+  
+  .task-item.task-secondary {
+    @apply before:bg-green-500;
+  }
+  
+  .task-item.task-tertiary {
+    @apply before:bg-yellow-500;
+  }
+  
+  .task-item.task-quaternary {
+    @apply before:bg-rose-500;
   }
 }
