@@ -1,33 +1,48 @@
-
-export interface FishPurchase {
+// Buyer types
+export interface Buyer {
   id: string;
-  fishName: string;
-  sizeKg: number;
-  quantity: number;
-  pricePerUnit: number;
-  purchaseDate: string;
-  totalPrice: number;
-  companyName?: string;
-  buyerName?: string;
+  user_id: string;
+  name: string;
+  address?: string;
+  created_at: string;
 }
 
+// Shipment types
+export interface Shipment {
+  id: string;
+  user_id: string;
+  buyer_id: string;
+  shipment_date: string;
+  container_number?: string;
+  created_at: string;
+}
+
+// Fish Entry types
 export interface FishEntry {
-  fishName: string;
-  sizeKg: number;
-  quantity: number;
-  pricePerUnit: number;
-}
-
-export interface User {
   id: string;
-  email: string;
-  name?: string;
+  shipment_id: string;
+  fish_name: string;
+  description?: string;
+  net_kg_per_mc: number;
+  qty_mc: number;
+  qty_kgs: number;
+  price_per_kg: number;
+  total_usd: number;
+  created_at: string;
 }
 
-export type TimeFrame = "week" | "month" | "3months" | "6months" | "year" | "all";
-export type ChartType = "bar" | "line" | "pie" | "area";
-export type SortDirection = "asc" | "desc";
-export type ExportFormat = "xlsx" | "csv" | "pdf";
-export type DateFilter = "all" | "today" | "yesterday" | "week" | "month" | "3months" | "year" | "custom";
-export type TableStyle = "default" | "striped" | "bordered" | "compact" | "modern" | "excel";
-export type AppTheme = "light" | "dark" | "blue" | "green";
+// Grouped fish entries for reporting
+export interface GroupedFishEntry {
+  fish_name: string;
+  entries: FishEntry[];
+  total_usd: number;
+}
+
+// Shipment with related data
+export interface ShipmentWithDetails {
+  shipment: Shipment;
+  buyer: Buyer;
+  entries: FishEntry[];
+  grouped_entries: GroupedFishEntry[];
+  grand_total: number;
+}
