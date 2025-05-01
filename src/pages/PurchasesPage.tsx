@@ -6,15 +6,17 @@ import { PurchaseTable } from "@/components/PurchaseTable";
 import { PurchaseForm } from "@/components/PurchaseForm";
 import { ExportButtons } from "@/components/ExportButtons";
 import { TableStyleSelector } from "@/components/TableStyleSelector";
-import { Plus, FileDown, Settings } from "lucide-react";
+import { Plus, FileDown, Settings, Palette } from "lucide-react";
 import { useApp } from "@/contexts/AppContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { AppTheme } from "@/types";
 
 export default function PurchasesPage() {
   const [isAddPurchaseOpen, setIsAddPurchaseOpen] = useState(false);
-  const { companyName, setCompanyName } = useApp();
+  const { companyName, setCompanyName, appTheme, setAppTheme } = useApp();
   
   return (
     <DashboardLayout>
@@ -32,33 +34,65 @@ export default function PurchasesPage() {
         </div>
       </div>
       
-      <Card className="mb-8">
-        <CardHeader>
-          <CardTitle className="flex items-center justify-between">
-            <span>Company Settings</span>
-            <Settings className="h-5 w-5 text-muted-foreground" />
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="companyName">Company Name (for Reports)</Label>
-              <Input
-                id="companyName"
-                value={companyName}
-                onChange={(e) => setCompanyName(e.target.value)}
-                className="mt-1"
-              />
-            </div>
-            <div className="flex flex-col">
-              <Label>Table Style</Label>
-              <div className="mt-1">
-                <TableStyleSelector />
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center justify-between">
+              <span>Company Settings</span>
+              <Settings className="h-5 w-5 text-muted-foreground" />
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="companyName">Company Name (for Reports)</Label>
+                <Input
+                  id="companyName"
+                  value={companyName}
+                  onChange={(e) => setCompanyName(e.target.value)}
+                  className="mt-1"
+                />
               </div>
             </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center justify-between">
+              <span>Display Settings</span>
+              <Palette className="h-5 w-5 text-muted-foreground" />
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="appTheme">App Theme</Label>
+                <Select
+                  value={appTheme}
+                  onValueChange={(value) => setAppTheme(value as AppTheme)}
+                >
+                  <SelectTrigger className="mt-1">
+                    <SelectValue placeholder="Select theme" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="light">Light Mode</SelectItem>
+                    <SelectItem value="dark">Dark Mode</SelectItem>
+                    <SelectItem value="blue">Blue Theme</SelectItem>
+                    <SelectItem value="green">Green Theme</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>Table Style</Label>
+                <div className="mt-1">
+                  <TableStyleSelector />
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
       
       <Card className="mb-8">
         <CardHeader>

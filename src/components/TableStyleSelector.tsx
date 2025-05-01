@@ -13,7 +13,8 @@ export function TableStyleSelector() {
     { value: "striped", label: "Striped", description: "Alternating row colors" },
     { value: "bordered", label: "Bordered", description: "Clear borders between cells" },
     { value: "compact", label: "Compact", description: "Reduced padding for dense data" },
-    { value: "modern", label: "Modern", description: "Excel-like appearance" },
+    { value: "modern", label: "Modern", description: "Clean minimalist design" },
+    { value: "excel", label: "Excel", description: "Microsoft Excel style" },
   ];
   
   return (
@@ -21,7 +22,7 @@ export function TableStyleSelector() {
       <PopoverTrigger asChild>
         <Button variant="outline" size="sm">
           <TableIcon className="h-4 w-4 mr-2" />
-          Table Style
+          Table Style: {styles.find(s => s.value === tableStyle)?.label || 'Default'}
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-64">

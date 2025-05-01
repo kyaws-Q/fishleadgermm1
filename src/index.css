@@ -148,4 +148,35 @@
   .modern-table tr:hover {
     @apply bg-blue-50/50;
   }
+  
+  /* Excel table style */
+  .excel-table {
+    @apply shadow-md border-collapse;
+  }
+  
+  .excel-table thead {
+    @apply sticky top-0;
+  }
+  
+  .excel-table th {
+    @apply bg-[#E9EFF8] text-[#0E3364] border border-[#B7C9E0] font-bold py-2 px-4;
+    background-image: linear-gradient(to bottom, #F5F8FC, #E9EFF8);
+  }
+  
+  .excel-table td {
+    @apply border border-[#D3D9E0] py-1 px-4;
+  }
+  
+  .excel-table tbody tr:hover {
+    @apply bg-[#E8F1FF];
+  }
+  
+  .excel-table tfoot {
+    @apply bg-[#E9EFF8] font-bold;
+  }
+  
+  .excel-table tfoot td {
+    @apply border border-[#B7C9E0] py-2;
+    background-image: linear-gradient(to bottom, #F5F8FC, #E9EFF8);
+  }
 }

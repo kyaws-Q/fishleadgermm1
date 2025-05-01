@@ -22,7 +22,7 @@ const App = () => (
     <AppProvider>
       <TooltipProvider>
         <Toaster />
-        <Sonner />
+        <Sonner position="top-right" />
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<HomePage />} />

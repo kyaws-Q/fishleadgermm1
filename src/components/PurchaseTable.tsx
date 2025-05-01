@@ -1,4 +1,5 @@
-import { useState } from "react";
+
+import { useState, useEffect } from "react";
 import { useApp } from "@/contexts/AppContext";
 import { FishPurchase, SortDirection, DateFilter } from "@/types";
 import { Button } from "@/components/ui/button";
@@ -9,17 +10,19 @@ import {
   TableHead,
   TableHeader,
   TableRow,
+  TableFooter,
 } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowDown, ArrowUp, Search, SlidersHorizontal, Calendar } from "lucide-react";
+import { ArrowDown, ArrowUp, Search, SlidersHorizontal, Calendar, Download } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { DatePicker } from "@/components/ui/date-picker";
-import { format } from "date-fns";
+import { format, isAfter, isBefore, isEqual } from "date-fns";
+import { Card, CardContent } from "@/components/ui/card";
 
 export function PurchaseTable() {
-  const { purchases, tableStyle } = useApp();
+  const { purchases, tableStyle, companyName } = useApp();
   const [filteredPurchases, setFilteredPurchases] = useState<FishPurchase[]>(purchases);
   const [searchQuery, setSearchQuery] = useState("");
   const [sortField, setSortField] = useState<keyof FishPurchase>("purchaseDate");
@@ -27,9 +30,13 @@ export function PurchaseTable() {
   const [dateFilter, setDateFilter] = useState<DateFilter>("all");
   const [startDate, setStartDate] = useState<Date | undefined>(undefined);
   const [endDate, setEndDate] = useState<Date | undefined>(undefined);
-  const [showFilters, setShowFilters] = useState(false);
-
-  // Update filtered purchases when purchases change or filters change
+  
+  // Update filtered purchases when purchases change
+  useEffect(() => {
+    applyFilters();
+  }, [purchases, searchQuery, dateFilter, startDate, endDate, sortField, sortDirection]);
+  
+  // Apply all filters and sorting
   const applyFilters = () => {
     let filtered = [...purchases];
     
@@ -50,7 +57,10 @@ export function PurchaseTable() {
     if (dateFilter === "custom" && startDate && endDate) {
       filtered = filtered.filter(purchase => {
         const purchaseDate = new Date(purchase.purchaseDate);
-        return purchaseDate >= startDate && purchaseDate <= endDate;
+        return (
+          (isAfter(purchaseDate, startDate) || isEqual(purchaseDate, startDate)) && 
+          (isBefore(purchaseDate, endDate) || isEqual(purchaseDate, endDate))
+        );
       });
     }
     
@@ -125,9 +135,6 @@ export function PurchaseTable() {
     const newDirection = field === sortField && sortDirection === "asc" ? "desc" : "asc";
     setSortField(field);
     setSortDirection(newDirection);
-    
-    const sorted = sortPurchases(filteredPurchases, field, newDirection);
-    setFilteredPurchases(sorted);
   };
   
   // Sort purchases helper function
@@ -156,21 +163,19 @@ export function PurchaseTable() {
     return format(new Date(dateString), 'MMM d, yyyy');
   };
   
-  // Update filtered purchases when any filter changes
-  useState(() => {
-    applyFilters();
-  });
-
   // Handle search
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value);
-    applyFilters();
   };
   
   // Handle date filter change
   const handleDateFilterChange = (value: string) => {
     setDateFilter(value as DateFilter);
-    applyFilters();
+  };
+
+  // Calculate grand total
+  const calculateGrandTotal = () => {
+    return filteredPurchases.reduce((total, purchase) => total + purchase.totalPrice, 0);
   };
 
   // Get table class based on style
@@ -184,6 +189,8 @@ export function PurchaseTable() {
         return "grid-table compact-table";
       case "modern":
         return "grid-table modern-table";
+      case "excel":
+        return "grid-table excel-table";
       default:
         return "grid-table";
     }
@@ -191,9 +198,15 @@ export function PurchaseTable() {
 
   return (
     <div className="fishledger-table-container">
+      {/* Table Header with Company Name */}
+      <div className="bg-blue-50 p-4 border-b border-blue-200 flex flex-col items-center">
+        <h2 className="text-xl font-bold text-blue-800">{companyName}</h2>
+        <p className="text-sm text-blue-600">Purchase Records</p>
+      </div>
+      
+      {/* Search and Filter Controls */}
       <div className="p-4 border-b flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <h3 className="font-semibold text-lg">Purchase History</h3>
-        <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+        <div className="flex flex-wrap items-center gap-3 w-full">
           <div className="relative w-full sm:w-64">
             <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
@@ -203,69 +216,44 @@ export function PurchaseTable() {
               onChange={handleSearch}
             />
           </div>
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button variant="outline" size="sm" className="h-9">
-                <SlidersHorizontal className="h-4 w-4 mr-2" />
-                Filters
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-80">
-              <div className="space-y-4">
-                <h4 className="font-medium">Filter Options</h4>
-                <div className="space-y-2">
-                  <Label htmlFor="dateFilter">Date Range</Label>
-                  <Select
-                    value={dateFilter}
-                    onValueChange={handleDateFilterChange}
-                  >
-                    <SelectTrigger id="dateFilter">
-                      <SelectValue placeholder="Select date range" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Time</SelectItem>
-                      <SelectItem value="today">Today</SelectItem>
-                      <SelectItem value="yesterday">Yesterday</SelectItem>
-                      <SelectItem value="week">Last 7 Days</SelectItem>
-                      <SelectItem value="month">Last Month</SelectItem>
-                      <SelectItem value="3months">Last 3 Months</SelectItem>
-                      <SelectItem value="year">Last Year</SelectItem>
-                      <SelectItem value="custom">Custom Range</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                {dateFilter === "custom" && (
-                  <div className="grid grid-cols-2 gap-2">
-                    <div className="space-y-2">
-                      <Label>Start Date</Label>
-                      <DatePicker 
-                        date={startDate} 
-                        onSelect={setStartDate} 
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>End Date</Label>
-                      <DatePicker 
-                        date={endDate} 
-                        onSelect={setEndDate}
-                      />
-                    </div>
-                  </div>
-                )}
-                
-                <Button 
-                  onClick={applyFilters} 
-                  className="w-full"
-                >
-                  Apply Filters
-                </Button>
-              </div>
-            </PopoverContent>
-          </Popover>
+          
+          <Select
+            value={dateFilter}
+            onValueChange={handleDateFilterChange}
+          >
+            <SelectTrigger className="w-[180px]">
+              <Calendar className="h-4 w-4 mr-2" />
+              <SelectValue placeholder="Date Filter" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Time</SelectItem>
+              <SelectItem value="today">Today</SelectItem>
+              <SelectItem value="yesterday">Yesterday</SelectItem>
+              <SelectItem value="week">Last 7 Days</SelectItem>
+              <SelectItem value="month">Last Month</SelectItem>
+              <SelectItem value="3months">Last 3 Months</SelectItem>
+              <SelectItem value="year">Last Year</SelectItem>
+              <SelectItem value="custom">Custom Range</SelectItem>
+            </SelectContent>
+          </Select>
+          
+          {dateFilter === "custom" && (
+            <div className="flex items-center gap-2">
+              <DatePicker 
+                date={startDate}
+                onSelect={setStartDate}
+              />
+              <span>to</span>
+              <DatePicker 
+                date={endDate}
+                onSelect={setEndDate}
+              />
+            </div>
+          )}
         </div>
       </div>
       
+      {/* Excel-like Table */}
       <div className="overflow-x-auto">
         <Table className={getTableClass()}>
           <TableHeader>
@@ -295,7 +283,7 @@ export function PurchaseTable() {
                 )}
               </TableHead>
               <TableHead 
-                className="cursor-pointer"
+                className="cursor-pointer text-right"
                 onClick={() => handleSort("sizeKg")}
               >
                 Size (KG) {sortField === "sizeKg" && (
@@ -303,7 +291,7 @@ export function PurchaseTable() {
                 )}
               </TableHead>
               <TableHead 
-                className="cursor-pointer"
+                className="cursor-pointer text-right"
                 onClick={() => handleSort("quantity")}
               >
                 Quantity {sortField === "quantity" && (
@@ -311,10 +299,10 @@ export function PurchaseTable() {
                 )}
               </TableHead>
               <TableHead 
-                className="cursor-pointer"
+                className="cursor-pointer text-right"
                 onClick={() => handleSort("pricePerUnit")}
               >
-                Price Per Unit {sortField === "pricePerUnit" && (
+                Price/Unit {sortField === "pricePerUnit" && (
                   sortDirection === "asc" ? <ArrowUp className="inline h-4 w-4" /> : <ArrowDown className="inline h-4 w-4" />
                 )}
               </TableHead>
@@ -349,15 +337,21 @@ export function PurchaseTable() {
                   <TableCell>{purchase.companyName || "-"}</TableCell>
                   <TableCell>{purchase.buyerName || "-"}</TableCell>
                   <TableCell className="font-medium">{purchase.fishName}</TableCell>
-                  <TableCell>{purchase.sizeKg.toFixed(1)}</TableCell>
-                  <TableCell>{purchase.quantity}</TableCell>
-                  <TableCell>${purchase.pricePerUnit.toFixed(2)}</TableCell>
+                  <TableCell className="text-right">{purchase.sizeKg.toFixed(1)}</TableCell>
+                  <TableCell className="text-right">{purchase.quantity}</TableCell>
+                  <TableCell className="text-right">${purchase.pricePerUnit.toFixed(2)}</TableCell>
                   <TableCell>{formatDate(purchase.purchaseDate)}</TableCell>
-                  <TableCell className="text-right">${purchase.totalPrice?.toFixed(2)}</TableCell>
+                  <TableCell className="text-right font-medium">${purchase.totalPrice?.toFixed(2)}</TableCell>
                 </TableRow>
               ))
             )}
           </TableBody>
+          <TableFooter>
+            <TableRow>
+              <TableCell colSpan={7} className="text-right font-bold">Grand Total:</TableCell>
+              <TableCell className="text-right font-bold">${calculateGrandTotal().toFixed(2)}</TableCell>
+            </TableRow>
+          </TableFooter>
         </Table>
       </div>
       
@@ -366,9 +360,6 @@ export function PurchaseTable() {
           <div className="text-sm text-muted-foreground">
             Showing {filteredPurchases.length} of {purchases.length} purchases
           </div>
-          <Button variant="outline" size="sm">
-            View All Purchases
-          </Button>
         </div>
       )}
     </div>

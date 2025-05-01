@@ -1,6 +1,6 @@
 
 import React, { createContext, useContext, useState, useEffect } from "react";
-import { FishPurchase, User, TimeFrame, TableStyle } from "@/types";
+import { FishPurchase, FishEntry, User, TimeFrame, TableStyle, AppTheme } from "@/types";
 import { 
   initialMockPurchases, 
   calculateTotalSpending,
@@ -18,11 +18,14 @@ interface AppContextType {
   spendingByFishType: Record<string, number>;
   purchasesByMonth: Record<string, number>;
   tableStyle: TableStyle;
+  appTheme: AppTheme;
   companyName: string;
   setTimeFrame: (timeFrame: TimeFrame) => void;
   setTableStyle: (style: TableStyle) => void;
+  setAppTheme: (theme: AppTheme) => void;
   setCompanyName: (name: string) => void;
   addPurchase: (purchase: Omit<FishPurchase, "id" | "totalPrice">) => void;
+  addMultiplePurchases: (companyName: string, buyerName: string, purchaseDate: string, entries: FishEntry[]) => void;
   login: (email: string, password: string) => Promise<void>;
   signup: (email: string, password: string, name?: string) => Promise<void>;
   logout: () => void;
@@ -38,7 +41,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [totalSpending, setTotalSpending] = useState(0);
   const [spendingByFishType, setSpendingByFishType] = useState<Record<string, number>>({});
   const [purchasesByMonth, setPurchasesByMonth] = useState<Record<string, number>>({});
-  const [tableStyle, setTableStyle] = useState<TableStyle>("modern");
+  const [tableStyle, setTableStyle] = useState<TableStyle>("excel");
+  const [appTheme, setAppTheme] = useState<AppTheme>("light");
   const [companyName, setCompanyName] = useState<string>("FishLedger");
 
   // Check if user is already logged in
@@ -82,6 +86,29 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     
     setPurchases(prev => [newPurchase, ...prev]);
     toast.success("Purchase added successfully");
+  };
+
+  // Add multiple purchases at once
+  const addMultiplePurchases = (companyName: string, buyerName: string, purchaseDate: string, entries: FishEntry[]) => {
+    if (entries.length === 0) {
+      toast.error("No fish entries to add");
+      return;
+    }
+    
+    const timestamp = Date.now();
+    const newPurchases: FishPurchase[] = entries.map((entry, index) => {
+      return {
+        ...entry,
+        id: `purchase-${timestamp}-${index}`,
+        purchaseDate,
+        companyName,
+        buyerName,
+        totalPrice: entry.sizeKg * entry.quantity * entry.pricePerUnit
+      };
+    });
+    
+    setPurchases(prev => [...newPurchases, ...prev]);
+    toast.success(`${entries.length} purchases added successfully`);
   };
 
   // Mock login function
@@ -153,11 +180,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       spendingByFishType,
       purchasesByMonth,
       tableStyle,
+      appTheme,
       companyName,
       setTimeFrame,
       setTableStyle,
+      setAppTheme,
       setCompanyName,
       addPurchase,
+      addMultiplePurchases,
       login,
       signup,
       logout
