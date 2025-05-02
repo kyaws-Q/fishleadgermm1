@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
@@ -60,111 +59,104 @@ export default function ShipmentsPage() {
       const mockShipmentDetails = {
         shipment: {
           id: shipmentId,
-          user_id: "user-1",
-          buyer_id: "buyer-1",
-          shipment_date: "2025-05-01",
-          container_number: "CONT123456",
-          created_at: "2025-05-01"
-        },
-        buyer: {
-          id: "buyer-1",
-          user_id: "user-1",
-          name: "XYZ Fish Traders",
-          address: "123 Ocean Way",
-          created_at: "2025-01-01"
+          userId: "user-1",
+          buyerId: "buyer-1",
+          date: "2025-05-01",
+          status: "Processing",
+          buyerName: "XYZ Fish Traders",
+          tracking_number: "TRACK-123456",
+          shipping_line: "Ocean Express",
+          route: "Mumbai to Singapore",
+          containerNumber: "CONT123456",
+          createdAt: "2025-05-01",
+          updatedAt: "2025-05-01"
         },
         entries: [
           {
             id: "entry-1",
-            shipment_id: shipmentId,
-            fish_name: "ROHU-G",
-            description: "2 UP",
-            net_kg_per_mc: 20,
-            qty_mc: 5,
-            qty_kgs: 100,
-            price_per_kg: 1.75,
-            total_usd: 175,
-            created_at: "2025-05-01"
+            shipmentId: shipmentId,
+            fishName: "ROHU-G",
+            size: "2 UP",
+            netKgPerMc: 20,
+            qtyMc: 5,
+            qtyKgs: 100,
+            pricePerKg: 1.75,
+            totalUsd: 175
           },
           {
             id: "entry-2",
-            shipment_id: shipmentId,
-            fish_name: "ROHU-G",
-            description: "1.5 UP",
-            net_kg_per_mc: 15,
-            qty_mc: 10,
-            qty_kgs: 150,
-            price_per_kg: 1.50,
-            total_usd: 225,
-            created_at: "2025-05-01"
+            shipmentId: shipmentId,
+            fishName: "ROHU-G",
+            size: "1.5 UP",
+            netKgPerMc: 15,
+            qtyMc: 10,
+            qtyKgs: 150,
+            pricePerKg: 1.50,
+            totalUsd: 225
           },
           {
             id: "entry-3",
-            shipment_id: shipmentId,
-            fish_name: "KATLA-G",
-            description: "3 UP",
-            net_kg_per_mc: 25,
-            qty_mc: 8,
-            qty_kgs: 200,
-            price_per_kg: 2.10,
-            total_usd: 420,
-            created_at: "2025-05-01"
+            shipmentId: shipmentId,
+            fishName: "KATLA-G",
+            size: "3 UP",
+            netKgPerMc: 25,
+            qtyMc: 8,
+            qtyKgs: 200,
+            pricePerKg: 2.10,
+            totalUsd: 420
           }
         ],
-        grouped_entries: [
+        groupedEntries: [
           {
-            fish_name: "ROHU-G",
+            fishName: "ROHU-G",
             entries: [
               {
                 id: "entry-1",
-                shipment_id: shipmentId,
-                fish_name: "ROHU-G",
-                description: "2 UP",
-                net_kg_per_mc: 20,
-                qty_mc: 5,
-                qty_kgs: 100,
-                price_per_kg: 1.75,
-                total_usd: 175,
-                created_at: "2025-05-01"
+                shipmentId: shipmentId,
+                fishName: "ROHU-G",
+                size: "2 UP",
+                netKgPerMc: 20,
+                qtyMc: 5,
+                qtyKgs: 100,
+                pricePerKg: 1.75,
+                totalUsd: 175
               },
               {
                 id: "entry-2",
-                shipment_id: shipmentId,
-                fish_name: "ROHU-G",
-                description: "1.5 UP",
-                net_kg_per_mc: 15,
-                qty_mc: 10,
-                qty_kgs: 150,
-                price_per_kg: 1.50,
-                total_usd: 225,
-                created_at: "2025-05-01"
+                shipmentId: shipmentId,
+                fishName: "ROHU-G",
+                size: "1.5 UP",
+                netKgPerMc: 15,
+                qtyMc: 10,
+                qtyKgs: 150,
+                pricePerKg: 1.50,
+                totalUsd: 225
               }
             ],
-            total_usd: 400
+            subtotal: 400
           },
           {
-            fish_name: "KATLA-G",
+            fishName: "KATLA-G",
             entries: [
               {
                 id: "entry-3",
-                shipment_id: shipmentId,
-                fish_name: "KATLA-G",
-                description: "3 UP",
-                net_kg_per_mc: 25,
-                qty_mc: 8,
-                qty_kgs: 200,
-                price_per_kg: 2.10,
-                total_usd: 420,
-                created_at: "2025-05-01"
+                shipmentId: shipmentId,
+                fishName: "KATLA-G",
+                size: "3 UP",
+                netKgPerMc: 25,
+                qtyMc: 8,
+                qtyKgs: 200,
+                pricePerKg: 2.10,
+                totalUsd: 420
               }
             ],
-            total_usd: 420
+            subtotal: 420
           }
         ],
-        grand_total: 820
+        grandTotal: 820
       };
       
-      await exportShipmentToExcel(mockShipmentDetails, companyName || "Fish Export Company");
+      await exportShipmentToExcel(mockShipmentDetails);
       
     } catch (error) {
       console.error("Error exporting to Excel:", error);

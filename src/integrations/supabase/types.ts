@@ -9,27 +9,6 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      buyer: {
-        Row: {
-          created_at: string | null
-          email: string
-          id: number
-          name: string
-        }
-        Insert: {
-          created_at?: string | null
-          email: string
-          id?: never
-          name: string
-        }
-        Update: {
-          created_at?: string | null
-          email?: string
-          id?: never
-          name?: string
-        }
-        Relationships: []
-      }
       buyers: {
         Row: {
           address: string | null
@@ -51,6 +30,21 @@ export type Database = {
           id?: string
           name?: string | null
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      "Fish Entries": {
+        Row: {
+          created_at: string
+          id: number
+        }
+        Insert: {
+          created_at?: string
+          id?: number
+        }
+        Update: {
+          created_at?: string
+          id?: number
         }
         Relationships: []
       }
@@ -79,15 +73,7 @@ export type Database = {
           status?: string
           tracking_number?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "shipments_buyer_id_fkey"
-            columns: ["buyer_id"]
-            isOneToOne: false
-            referencedRelation: "buyer"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
     }
     Views: {

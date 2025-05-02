@@ -1,3 +1,4 @@
+
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
 import { FishPurchase } from '@/types';
@@ -114,12 +115,12 @@ export const exportShipmentToExcel = async (shipment: ShipmentWithEntries) => {
   sheet.addRow([]).height = 20;
   sheet.addRow(['SHIPMENT INVOICE']).font = { bold: true, size: 16 };
   sheet.addRow([]).height = 10;
-  sheet.addRow([`Tracking Number: ${shipment.tracking_number || 'N/A'}`]);
-  sheet.addRow([`Date: ${format(new Date(shipment.shipment_date), 'dd/MM/yyyy')}`]);
-  sheet.addRow([`Status: ${shipment.status}`]);
-  sheet.addRow([`Buyer: ${shipment.buyer?.name || 'N/A'}`]);
-  sheet.addRow([`Shipping Line: ${shipment.shipping_line || 'N/A'}`]);
-  sheet.addRow([`Route: ${shipment.route || 'N/A'}`]);
+  sheet.addRow([`Tracking Number: ${shipment.shipment.tracking_number || 'N/A'}`]);
+  sheet.addRow([`Date: ${format(new Date(shipment.shipment.date), 'dd/MM/yyyy')}`]);
+  sheet.addRow([`Status: ${shipment.shipment.status || 'N/A'}`]);
+  sheet.addRow([`Buyer: ${shipment.shipment.buyerName || 'N/A'}`]);
+  sheet.addRow([`Shipping Line: ${shipment.shipment.shipping_line || 'N/A'}`]);
+  sheet.addRow([`Route: ${shipment.shipment.route || 'N/A'}`]);
   sheet.addRow([]).height = 10;
   
   // Add items
@@ -127,17 +128,17 @@ export const exportShipmentToExcel = async (shipment: ShipmentWithEntries) => {
     shipment.entries.forEach((entry, index) => {
       sheet.addRow({
         item: index + 1,
-        fish: entry.fish_name,
-        quantity: entry.qty_mc,
-        size: entry.net_kg_per_mc,
-        price: `$${entry.price_per_kg.toFixed(2)}`,
-        total: `$${(entry.qty_mc * entry.net_kg_per_mc * entry.price_per_kg).toFixed(2)}`
+        fish: entry.fishName,
+        quantity: entry.qtyMc,
+        size: entry.netKgPerMc,
+        price: `$${entry.pricePerKg.toFixed(2)}`,
+        total: `$${(entry.qtyMc * entry.netKgPerMc * entry.pricePerKg).toFixed(2)}`
       });
     });
     
     // Add total row
     const totalAmount = shipment.entries.reduce((sum, entry) => 
-      sum + (entry.qty_mc * entry.net_kg_per_mc * entry.price_per_kg), 0);
+      sum + (entry.qtyMc * entry.netKgPerMc * entry.pricePerKg), 0);
     
     sheet.addRow([]);
     const totalRow = sheet.addRow({

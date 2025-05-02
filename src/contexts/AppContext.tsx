@@ -88,7 +88,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   };
 
   // Login functionality using Supabase
-  const login = async (email: string, password: string) => {
+  const login = async (email: string, password: string): Promise<void> => {
     setIsLoading(true);
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -99,7 +99,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
       if (error) throw error;
       
       toast.success("Login successful!");
-      return data;
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Login failed");
       throw error;
@@ -109,7 +108,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   };
 
   // Signup functionality using Supabase
-  const signup = async (email: string, password: string) => {
+  const signup = async (email: string, password: string): Promise<void> => {
     setIsLoading(true);
     try {
       const { data, error } = await supabase.auth.signUp({
@@ -120,7 +119,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
       if (error) throw error;
       
       toast.success("Signup successful! Please check your email.");
-      return data;
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Signup failed");
       throw error;

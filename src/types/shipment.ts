@@ -17,6 +17,10 @@ export interface Shipment {
   containerNumber?: string;
   createdAt: string;
   updatedAt: string;
+  status?: string;
+  tracking_number?: string;
+  shipping_line?: string;
+  route?: string;
 }
 
 export interface FishEntry {
