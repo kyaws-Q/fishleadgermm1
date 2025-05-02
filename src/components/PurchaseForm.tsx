@@ -5,16 +5,24 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { FishEntry } from "@/types";
+import { FishPurchase, COMMON_FISH_NAMES, COMMON_FISH_SIZES } from "@/types";
 import { Plus, Trash, Info } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface PurchaseFormProps {
   open: boolean;
   onClose: () => void;
+}
+
+interface FormFishEntry {
+  fishName: string;
+  sizeKg: number;
+  quantity: number;
+  pricePerUnit: number;
 }
 
 export function PurchaseForm({ open, onClose }: PurchaseFormProps) {
@@ -22,7 +30,7 @@ export function PurchaseForm({ open, onClose }: PurchaseFormProps) {
   const [companyName, setCompanyName] = useState("");
   const [buyerName, setBuyerName] = useState("");
   const [purchaseDate, setPurchaseDate] = useState(new Date().toISOString().split("T")[0]);
-  const [fishEntries, setFishEntries] = useState<FishEntry[]>([{
+  const [fishEntries, setFishEntries] = useState<FormFishEntry[]>([{
     fishName: "",
     sizeKg: 0,
     quantity: 1,
@@ -41,7 +49,7 @@ export function PurchaseForm({ open, onClose }: PurchaseFormProps) {
     setPurchaseDate(e.target.value);
   };
 
-  const handleEntryChange = (index: number, field: keyof FishEntry, value: string | number) => {
+  const handleEntryChange = (index: number, field: keyof FormFishEntry, value: string | number) => {
     const updatedEntries = [...fishEntries];
     if (field === 'fishName') {
       updatedEntries[index][field] = value as string;
@@ -68,7 +76,7 @@ export function PurchaseForm({ open, onClose }: PurchaseFormProps) {
     }
   };
 
-  const calculateTotalForEntry = (entry: FishEntry) => {
+  const calculateTotalForEntry = (entry: FormFishEntry) => {
     return entry.sizeKg * entry.quantity * entry.pricePerUnit;
   };
 
@@ -179,6 +187,7 @@ export function PurchaseForm({ open, onClose }: PurchaseFormProps) {
                         <TableRow>
                           <TableHead>#</TableHead>
                           <TableHead>Fish Name</TableHead>
+                          <TableHead>Size</TableHead>
                           <TableHead>Size (KG)</TableHead>
                           <TableHead>Quantity</TableHead>
                           <TableHead>Price/Unit</TableHead>
@@ -191,13 +200,34 @@ export function PurchaseForm({ open, onClose }: PurchaseFormProps) {
                           <TableRow key={index}>
                             <TableCell>{index + 1}</TableCell>
                             <TableCell>
-                              <Input
+                              <Select
                                 value={entry.fishName}
-                                onChange={(e) => handleEntryChange(index, 'fishName', e.target.value)}
-                                required
-                                placeholder="Fish name"
-                                className="border-gray-200"
-                              />
+                                onValueChange={(value) => handleEntryChange(index, 'fishName', value)}
+                              >
+                                <SelectTrigger className="w-full">
+                                  <SelectValue placeholder="Select fish type" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {COMMON_FISH_NAMES.map(name => (
+                                    <SelectItem key={name} value={name}>{name}</SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </TableCell>
+                            <TableCell>
+                              <Select
+                                value={entry.sizeKg.toString()}
+                                onValueChange={(value) => handleEntryChange(index, 'sizeKg', parseFloat(value) || 0)}
+                              >
+                                <SelectTrigger className="w-full">
+                                  <SelectValue placeholder="Select size" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {COMMON_FISH_SIZES.map(size => (
+                                    <SelectItem key={size} value={size}>{size}</SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
                             </TableCell>
                             <TableCell>
                               <Input
@@ -250,7 +280,7 @@ export function PurchaseForm({ open, onClose }: PurchaseFormProps) {
                           </TableRow>
                         ))}
                         <TableRow className="bg-blue-50 font-bold">
-                          <TableCell colSpan={5} className="text-right">
+                          <TableCell colSpan={6} className="text-right">
                             Grand Total:
                           </TableCell>
                           <TableCell colSpan={2}>

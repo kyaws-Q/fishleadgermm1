@@ -3,7 +3,7 @@ import { useState } from "react";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, Ship, Box, Filter, Calendar } from "lucide-react";
+import { Plus, Ship, Box, Filter, Calendar, Download } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { 
   Table,
@@ -17,8 +17,12 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DatePicker } from "@/components/ui/date-picker";
 import { ShipmentForm } from "@/components/ShipmentForm";
+import { toast } from "sonner";
+import { exportShipmentToExcel } from "@/utils/excelExport";
+import { useApp } from "@/contexts/AppContext";
 
 export default function ShipmentsPage() {
+  const { companyName } = useApp();
   const [isShipmentFormOpen, setIsShipmentFormOpen] = useState(false);
   const [filterDate, setFilterDate] = useState<Date | undefined>(undefined);
   const [filterBuyer, setFilterBuyer] = useState("");
@@ -45,6 +49,128 @@ export default function ShipmentsPage() {
       entriesCount: 3
     }
   ];
+
+  const handleExportToExcel = async (shipmentId: string) => {
+    try {
+      // In a real app, you would fetch the shipment details by ID
+      // For now, we'll use mock data as an example
+      toast.success("Exporting shipment to Excel...");
+      
+      // This is mock data - in a real app, fetch the actual ShipmentWithDetails
+      const mockShipmentDetails = {
+        shipment: {
+          id: shipmentId,
+          user_id: "user-1",
+          buyer_id: "buyer-1",
+          shipment_date: "2025-05-01",
+          container_number: "CONT123456",
+          created_at: "2025-05-01"
+        },
+        buyer: {
+          id: "buyer-1",
+          user_id: "user-1",
+          name: "XYZ Fish Traders",
+          address: "123 Ocean Way",
+          created_at: "2025-01-01"
+        },
+        entries: [
+          {
+            id: "entry-1",
+            shipment_id: shipmentId,
+            fish_name: "ROHU-G",
+            description: "2 UP",
+            net_kg_per_mc: 20,
+            qty_mc: 5,
+            qty_kgs: 100,
+            price_per_kg: 1.75,
+            total_usd: 175,
+            created_at: "2025-05-01"
+          },
+          {
+            id: "entry-2",
+            shipment_id: shipmentId,
+            fish_name: "ROHU-G",
+            description: "1.5 UP",
+            net_kg_per_mc: 15,
+            qty_mc: 10,
+            qty_kgs: 150,
+            price_per_kg: 1.50,
+            total_usd: 225,
+            created_at: "2025-05-01"
+          },
+          {
+            id: "entry-3",
+            shipment_id: shipmentId,
+            fish_name: "KATLA-G",
+            description: "3 UP",
+            net_kg_per_mc: 25,
+            qty_mc: 8,
+            qty_kgs: 200,
+            price_per_kg: 2.10,
+            total_usd: 420,
+            created_at: "2025-05-01"
+          }
+        ],
+        grouped_entries: [
+          {
+            fish_name: "ROHU-G",
+            entries: [
+              {
+                id: "entry-1",
+                shipment_id: shipmentId,
+                fish_name: "ROHU-G",
+                description: "2 UP",
+                net_kg_per_mc: 20,
+                qty_mc: 5,
+                qty_kgs: 100,
+                price_per_kg: 1.75,
+                total_usd: 175,
+                created_at: "2025-05-01"
+              },
+              {
+                id: "entry-2",
+                shipment_id: shipmentId,
+                fish_name: "ROHU-G",
+                description: "1.5 UP",
+                net_kg_per_mc: 15,
+                qty_mc: 10,
+                qty_kgs: 150,
+                price_per_kg: 1.50,
+                total_usd: 225,
+                created_at: "2025-05-01"
+              }
+            ],
+            total_usd: 400
+          },
+          {
+            fish_name: "KATLA-G",
+            entries: [
+              {
+                id: "entry-3",
+                shipment_id: shipmentId,
+                fish_name: "KATLA-G",
+                description: "3 UP",
+                net_kg_per_mc: 25,
+                qty_mc: 8,
+                qty_kgs: 200,
+                price_per_kg: 2.10,
+                total_usd: 420,
+                created_at: "2025-05-01"
+              }
+            ],
+            total_usd: 420
+          }
+        ],
+        grand_total: 820
+      };
+      
+      await exportShipmentToExcel(mockShipmentDetails, companyName || "Fish Export Company");
+      
+    } catch (error) {
+      console.error("Error exporting to Excel:", error);
+      toast.error("Failed to export shipment");
+    }
+  };
 
   return (
     <DashboardLayout>
@@ -142,7 +268,14 @@ export default function ShipmentsPage() {
                     <TableCell>
                       <div className="flex gap-2">
                         <Button variant="outline" size="sm">View</Button>
-                        <Button variant="outline" size="sm">Export</Button>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={() => handleExportToExcel(shipment.id)}
+                        >
+                          <Download className="h-4 w-4 mr-1" />
+                          Export
+                        </Button>
                       </div>
                     </TableCell>
                   </TableRow>

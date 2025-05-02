@@ -19,10 +19,16 @@ export async function getBuyers() {
 
 export async function createBuyer(buyer: Omit<Buyer, 'id' | 'user_id' | 'created_at'>) {
   try {
+    // Get the user ID from the auth context
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) throw new Error("User not authenticated");
+    
     const { data, error } = await supabase
       .from('buyers')
       .insert({
         ...buyer,
+        user_id: user.id
       })
       .select()
       .single();

@@ -9,20 +9,85 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      "fish data": {
+      buyer: {
         Row: {
-          created_at: string
+          created_at: string | null
+          email: string
           id: number
+          name: string
         }
         Insert: {
-          created_at?: string
-          id?: number
+          created_at?: string | null
+          email: string
+          id?: never
+          name: string
         }
         Update: {
-          created_at?: string
-          id?: number
+          created_at?: string | null
+          email?: string
+          id?: never
+          name?: string
         }
         Relationships: []
+      }
+      buyers: {
+        Row: {
+          address: string | null
+          created_at: string | null
+          id: string
+          name: string | null
+          user_id: string | null
+        }
+        Insert: {
+          address?: string | null
+          created_at?: string | null
+          id?: string
+          name?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          address?: string | null
+          created_at?: string | null
+          id?: string
+          name?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      shipments: {
+        Row: {
+          buyer_id: number
+          created_at: string | null
+          id: number
+          shipment_date: string
+          status: string
+          tracking_number: string | null
+        }
+        Insert: {
+          buyer_id: number
+          created_at?: string | null
+          id?: never
+          shipment_date: string
+          status: string
+          tracking_number?: string | null
+        }
+        Update: {
+          buyer_id?: number
+          created_at?: string | null
+          id?: never
+          shipment_date?: string
+          status?: string
+          tracking_number?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shipments_buyer_id_fkey"
+            columns: ["buyer_id"]
+            isOneToOne: false
+            referencedRelation: "buyer"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {

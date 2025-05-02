@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -8,16 +9,32 @@ import { DatePicker } from "@/components/ui/date-picker";
 import { Trash2, Plus, Save } from "lucide-react";
 import { useApp } from "@/contexts/AppContext";
 import { toast } from "sonner";
-import { Buyer, FishEntry, Shipment } from "@/types/shipment";
+import { Buyer, FishEntryFormData, COMMON_FISH_NAMES, COMMON_FISH_SIZES } from "@/types";
 import { getBuyers } from "@/services/buyerService";
 import { createShipment } from "@/services/shipmentService";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface ShipmentFormProps {
   open: boolean;
   onClose: () => void;
   initialData?: {
-    shipment: Shipment;
-    entries: FishEntry[];
+    shipment: {
+      id: string;
+      buyerId: string;
+      date: string;
+      containerNumber?: string;
+      vesselName?: string;
+    };
+    entries: Array<{
+      id?: string;
+      fish_name: string;
+      description: string;
+      netKgPerMc: number;
+      qtyMc: number;
+      qtyKgs: number;
+      pricePerKg: number;
+      totalUsd: number;
+    }>;
   };
 }
 
@@ -29,8 +46,8 @@ export function ShipmentForm({ open, onClose, initialData }: ShipmentFormProps) 
   const [buyerId, setBuyerId] = useState<string>("");
   const [containerNumber, setContainerNumber] = useState<string>("");
   const [vesselName, setVesselName] = useState<string>("");
-  const [entries, setEntries] = useState<Partial<FishEntry>[]>([
-    { fishName: "", size: "", netKgPerMc: 0, qtyMc: 0, qtyKgs: 0, pricePerKg: 0, totalUsd: 0 }
+  const [entries, setEntries] = useState<Partial<FishEntryFormData>[]>([
+    { fish_name: "", description: "", net_kg_per_mc: 0, qty_mc: 0, qty_kgs: 0, price_per_kg: 0, total_usd: 0 }
   ]);
 
   useEffect(() => {
@@ -46,13 +63,13 @@ export function ShipmentForm({ open, onClose, initialData }: ShipmentFormProps) 
         setVesselName(shipment.vesselName || "");
         setEntries(entries.map(entry => ({
           id: entry.id,
-          fishName: entry.fishName,
-          size: entry.size,
-          netKgPerMc: entry.netKgPerMc,
-          qtyMc: entry.qtyMc,
-          qtyKgs: entry.qtyKgs,
-          pricePerKg: entry.pricePerKg,
-          totalUsd: entry.totalUsd
+          fish_name: entry.fish_name,
+          description: entry.description,
+          net_kg_per_mc: entry.netKgPerMc,
+          qty_mc: entry.qtyMc,
+          qty_kgs: entry.qtyKgs,
+          price_per_kg: entry.pricePerKg,
+          total_usd: entry.totalUsd
         })));
       } else {
         // Reset form for new shipment
@@ -61,7 +78,7 @@ export function ShipmentForm({ open, onClose, initialData }: ShipmentFormProps) 
         setContainerNumber("");
         setVesselName("");
         setEntries([
-          { fishName: "", size: "", netKgPerMc: 0, qtyMc: 0, qtyKgs: 0, pricePerKg: 0, totalUsd: 0 }
+          { fish_name: "", description: "", net_kg_per_mc: 0, qty_mc: 0, qty_kgs: 0, price_per_kg: 0, total_usd: 0 }
         ]);
       }
     }
@@ -77,7 +94,7 @@ export function ShipmentForm({ open, onClose, initialData }: ShipmentFormProps) 
     }
   };
 
-  const handleEntryChange = (index: number, field: keyof FishEntry, value: any) => {
+  const handleEntryChange = (index: number, field: keyof FishEntryFormData, value: any) => {
     const updatedEntries = [...entries];
     updatedEntries[index] = {
       ...updatedEntries[index],
@@ -85,16 +102,16 @@ export function ShipmentForm({ open, onClose, initialData }: ShipmentFormProps) 
     };
 
     // Recalculate derived values
-    if (field === 'netKgPerMc' || field === 'qtyMc') {
-      const netKgPerMc = Number(updatedEntries[index].netKgPerMc) || 0;
-      const qtyMc = Number(updatedEntries[index].qtyMc) || 0;
-      updatedEntries[index].qtyKgs = netKgPerMc * qtyMc;
+    if (field === 'net_kg_per_mc' || field === 'qty_mc') {
+      const netKgPerMc = Number(updatedEntries[index].net_kg_per_mc) || 0;
+      const qtyMc = Number(updatedEntries[index].qty_mc) || 0;
+      updatedEntries[index].qty_kgs = netKgPerMc * qtyMc;
     }
 
-    if (field === 'qtyKgs' || field === 'pricePerKg') {
-      const qtyKgs = Number(updatedEntries[index].qtyKgs) || 0;
-      const pricePerKg = Number(updatedEntries[index].pricePerKg) || 0;
-      updatedEntries[index].totalUsd = qtyKgs * pricePerKg;
+    if (field === 'qty_kgs' || field === 'price_per_kg') {
+      const qtyKgs = Number(updatedEntries[index].qty_kgs) || 0;
+      const pricePerKg = Number(updatedEntries[index].price_per_kg) || 0;
+      updatedEntries[index].total_usd = qtyKgs * pricePerKg;
     }
 
     setEntries(updatedEntries);
@@ -103,7 +120,7 @@ export function ShipmentForm({ open, onClose, initialData }: ShipmentFormProps) 
   const addEntry = () => {
     setEntries([
       ...entries,
-      { fishName: "", size: "", netKgPerMc: 0, qtyMc: 0, qtyKgs: 0, pricePerKg: 0, totalUsd: 0 }
+      { fish_name: "", description: "", net_kg_per_mc: 0, qty_mc: 0, qty_kgs: 0, price_per_kg: 0, total_usd: 0 }
     ]);
   };
 
@@ -135,9 +152,9 @@ export function ShipmentForm({ open, onClose, initialData }: ShipmentFormProps) 
 
     // Validate entries
     const validEntries = entries.filter(entry => 
-      entry.fishName && 
-      entry.qtyKgs && 
-      entry.pricePerKg
+      entry.fish_name && 
+      entry.qty_kgs && 
+      entry.price_per_kg
     );
 
     if (validEntries.length === 0) {
@@ -165,13 +182,13 @@ export function ShipmentForm({ open, onClose, initialData }: ShipmentFormProps) 
 
       const entriesData = validEntries.map(entry => ({
         shipmentId: "", // Will be set by the service
-        fishName: entry.fishName || "",
-        size: entry.size || "",
-        netKgPerMc: Number(entry.netKgPerMc) || 0,
-        qtyMc: Number(entry.qtyMc) || 0,
-        qtyKgs: Number(entry.qtyKgs) || 0,
-        pricePerKg: Number(entry.pricePerKg) || 0,
-        totalUsd: Number(entry.totalUsd) || 0,
+        fish_name: entry.fish_name || "",
+        description: entry.description || "",
+        net_kg_per_mc: Number(entry.net_kg_per_mc) || 0,
+        qty_mc: Number(entry.qty_mc) || 0,
+        qty_kgs: Number(entry.qty_kgs) || 0,
+        price_per_kg: Number(entry.price_per_kg) || 0,
+        total_usd: Number(entry.total_usd) || 0,
       }));
 
       if (initialData) {
@@ -194,7 +211,7 @@ export function ShipmentForm({ open, onClose, initialData }: ShipmentFormProps) 
   };
 
   const calculateGrandTotal = () => {
-    return entries.reduce((total, entry) => total + (Number(entry.totalUsd) || 0), 0);
+    return entries.reduce((total, entry) => total + (Number(entry.total_usd) || 0), 0);
   };
 
   return (
@@ -210,7 +227,6 @@ export function ShipmentForm({ open, onClose, initialData }: ShipmentFormProps) 
             <DatePicker
               date={date}
               onSelect={setDate}
-              className="w-full"
             />
           </div>
           <div>
@@ -249,103 +265,125 @@ export function ShipmentForm({ open, onClose, initialData }: ShipmentFormProps) 
         <div className="border rounded-md p-4 mt-4">
           <h3 className="font-medium mb-4">Fish Entries</h3>
           
-          <div className="overflow-x-auto">
-            <table className="w-full excel-style">
-              <thead>
-                <tr>
-                  <th>Fish Name</th>
-                  <th>Size</th>
-                  <th>Net KG/MC</th>
-                  <th>Qty MC</th>
-                  <th>Qty KGs</th>
-                  <th>Price/KG</th>
-                  <th>Total USD</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody>
-                {entries.map((entry, index) => (
-                  <tr key={index}>
-                    <td>
-                      <Input
-                        value={entry.fishName || ""}
-                        onChange={(e) => handleEntryChange(index, "fishName", e.target.value)}
-                        className="w-full"
-                      />
-                    </td>
-                    <td>
-                      <Input
-                        value={entry.size || ""}
-                        onChange={(e) => handleEntryChange(index, "size", e.target.value)}
-                        className="w-full"
-                      />
-                    </td>
-                    <td>
-                      <Input
-                        type="number"
-                        value={entry.netKgPerMc || ""}
-                        onChange={(e) => handleEntryChange(index, "netKgPerMc", parseFloat(e.target.value))}
-                        className="w-full"
-                      />
-                    </td>
-                    <td>
-                      <Input
-                        type="number"
-                        value={entry.qtyMc || ""}
-                        onChange={(e) => handleEntryChange(index, "qtyMc", parseInt(e.target.value))}
-                        className="w-full"
-                      />
-                    </td>
-                    <td>
-                      <Input
-                        type="number"
-                        value={entry.qtyKgs || ""}
-                        onChange={(e) => handleEntryChange(index, "qtyKgs", parseFloat(e.target.value))}
-                        className="w-full"
-                      />
-                    </td>
-                    <td>
-                      <Input
-                        type="number"
-                        value={entry.pricePerKg || ""}
-                        onChange={(e) => handleEntryChange(index, "pricePerKg", parseFloat(e.target.value))}
-                        className="w-full"
-                      />
-                    </td>
-                    <td>
-                      <Input
-                        type="number"
-                        value={entry.totalUsd?.toFixed(2) || "0.00"}
-                        readOnly
-                        className="w-full bg-muted"
-                      />
-                    </td>
-                    <td>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => removeEntry(index)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </td>
+          <ScrollArea className="h-[400px] overflow-y-auto">
+            <div className="overflow-x-auto">
+              <table className="w-full excel-style">
+                <thead>
+                  <tr>
+                    <th>Fish Name</th>
+                    <th>Size</th>
+                    <th>Net KG/MC</th>
+                    <th>Qty MC</th>
+                    <th>Qty KGs</th>
+                    <th>Price/KG</th>
+                    <th>Total USD</th>
+                    <th></th>
                   </tr>
-                ))}
-              </tbody>
-              <tfoot>
-                <tr>
-                  <td colSpan={6} className="text-right font-medium">
-                    Grand Total:
-                  </td>
-                  <td className="font-medium">
-                    ${calculateGrandTotal().toFixed(2)}
-                  </td>
-                  <td></td>
-                </tr>
-              </tfoot>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {entries.map((entry, index) => (
+                    <tr key={index}>
+                      <td>
+                        <Select 
+                          value={entry.fish_name || ""} 
+                          onValueChange={(value) => handleEntryChange(index, "fish_name", value)}
+                        >
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Select fish" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {COMMON_FISH_NAMES.map(name => (
+                              <SelectItem key={name} value={name}>
+                                {name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </td>
+                      <td>
+                        <Select 
+                          value={entry.description || ""} 
+                          onValueChange={(value) => handleEntryChange(index, "description", value)}
+                        >
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Select size" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {COMMON_FISH_SIZES.map(size => (
+                              <SelectItem key={size} value={size}>
+                                {size}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </td>
+                      <td>
+                        <Input
+                          type="number"
+                          value={entry.net_kg_per_mc || ""}
+                          onChange={(e) => handleEntryChange(index, "net_kg_per_mc", parseFloat(e.target.value))}
+                          className="w-full"
+                        />
+                      </td>
+                      <td>
+                        <Input
+                          type="number"
+                          value={entry.qty_mc || ""}
+                          onChange={(e) => handleEntryChange(index, "qty_mc", parseInt(e.target.value))}
+                          className="w-full"
+                        />
+                      </td>
+                      <td>
+                        <Input
+                          type="number"
+                          value={entry.qty_kgs || ""}
+                          onChange={(e) => handleEntryChange(index, "qty_kgs", parseFloat(e.target.value))}
+                          className="w-full"
+                        />
+                      </td>
+                      <td>
+                        <Input
+                          type="number"
+                          value={entry.price_per_kg || ""}
+                          onChange={(e) => handleEntryChange(index, "price_per_kg", parseFloat(e.target.value))}
+                          className="w-full"
+                        />
+                      </td>
+                      <td>
+                        <Input
+                          type="number"
+                          value={entry.total_usd?.toFixed(2) || "0.00"}
+                          readOnly
+                          className="w-full bg-muted"
+                        />
+                      </td>
+                      <td>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => removeEntry(index)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot>
+                  <tr>
+                    <td colSpan={6} className="text-right font-medium">
+                      Grand Total:
+                    </td>
+                    <td className="font-medium">
+                      ${calculateGrandTotal().toFixed(2)}
+                    </td>
+                    <td></td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </ScrollArea>
           
           <Button
             type="button"
