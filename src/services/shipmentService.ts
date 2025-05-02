@@ -9,7 +9,7 @@ export async function getShipments() {
       .from("shipments")
       .select(`
         *,
-        buyer:buyer_id(name)
+        buyers!buyer_id(name)
       `)
       .order('shipment_date', { ascending: false });
 
@@ -37,7 +37,7 @@ export async function getShipmentDetails(id: string | number): Promise<ShipmentW
       .from("shipments")
       .select(`
         *,
-        buyer:buyer_id(*)
+        buyers!buyer_id(*)
       `)
       .eq('id', shipmentId)
       .single();
@@ -107,6 +107,8 @@ export async function getShipmentDetails(id: string | number): Promise<ShipmentW
     }, 0);
 
     // Map Supabase data to our application types
+    const buyerData = shipmentData.buyers;
+
     const shipmentWithDetails: ShipmentWithDetails = {
       shipment: {
         id: shipmentData.id.toString(),
@@ -119,10 +121,10 @@ export async function getShipmentDetails(id: string | number): Promise<ShipmentW
         created_at: shipmentData.created_at || new Date().toISOString()
       },
       buyer: {
-        id: shipmentData.buyer.id.toString(),
-        name: shipmentData.buyer.name,
-        address: shipmentData.buyer.email || "", // Using email as address since address isn't available
-        created_at: shipmentData.buyer.created_at || new Date().toISOString()
+        id: buyerData.id.toString(),
+        name: buyerData.name,
+        address: buyerData.address || "",
+        created_at: buyerData.created_at || new Date().toISOString()
       },
       entries: entries,
       grouped_entries: groupedEntries,

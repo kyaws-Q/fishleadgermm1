@@ -73,7 +73,15 @@ export type Database = {
           status?: string
           tracking_number?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "shipments_buyer_id_fkey"
+            columns: ["buyer_id"]
+            isOneToOne: false
+            referencedRelation: "shipments"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
