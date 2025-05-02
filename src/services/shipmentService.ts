@@ -1,6 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { Shipment, FishEntry } from '@/types';
+import { Shipment, FishEntry, ShipmentWithDetails } from '@/types';
 
 // Get all shipments with buyer information
 export async function getShipments() {
@@ -15,7 +15,7 @@ export async function getShipments() {
 
     if (error) throw error;
     
-    // Type assertion to handle Supabase's return type
+    // Use type assertion to handle the response
     return data as unknown as (Shipment & { buyer: { name: string } })[];
   } catch (error) {
     console.error('Error fetching shipments:', error);
@@ -46,8 +46,11 @@ export async function getShipmentDetails(shipmentId: string) {
 
     if (entriesError) throw entriesError;
 
-    // Group entries by fish name
-    const grouped_entries = entries.reduce((groups: any[], entry: FishEntry) => {
+    // Use explicit typing to handle the entries data
+    const fishEntries = entries as unknown as FishEntry[];
+
+    // Group entries by fish name with proper type handling
+    const grouped_entries = fishEntries.reduce((groups: any[], entry: FishEntry) => {
       const existingGroup = groups.find(g => g.fish_name === entry.fish_name);
       if (existingGroup) {
         existingGroup.entries.push(entry);
@@ -62,16 +65,17 @@ export async function getShipmentDetails(shipmentId: string) {
       return groups;
     }, []);
 
-    // Calculate grand total
-    const grand_total = entries.reduce((sum: number, entry: FishEntry) => sum + entry.total_usd, 0);
+    // Calculate grand total with proper type handling
+    const grand_total = fishEntries.reduce((sum: number, entry: FishEntry) => sum + entry.total_usd, 0);
 
+    // Return properly structured data
     return {
       shipment,
       buyer: shipment.buyer,
-      entries,
+      entries: fishEntries,
       grouped_entries,
       grand_total
-    };
+    } as ShipmentWithDetails;
   } catch (error) {
     console.error('Error fetching shipment details:', error);
     return null;

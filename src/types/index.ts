@@ -67,19 +67,19 @@ export type DateFilter = "all" | "today" | "week" | "month" | "custom" | "yester
 export type SortDirection = "asc" | "desc";
 export type ExportFormat = "excel" | "pdf" | "csv" | "xlsx";
 
-// Modified FishPurchase interface to match what's being used in the components
+// FishPurchase interface to match what's being used in the components
 export interface FishPurchase {
   id: string;
   companyName: string;
   buyerName: string;
   date: string;
-  purchaseDate: string; // Added to match what's used in components
+  purchaseDate: string;
   fishName: string;
   sizeKg: number;
   quantity: number;
   pricePerUnit: number;
   total: number;
-  totalPrice: number; // Added to match what's used in components
+  totalPrice: number;
 }
 
 export interface User {
@@ -87,6 +87,36 @@ export interface User {
   email: string;
   name?: string;
   avatar_url?: string;
+}
+
+// Extended AppContextProps to include all properties used in components
+export interface AppContextProps {
+  user: { id: string; email: string; name?: string } | null;
+  companyName: string;
+  setCompanyName: (name: string) => void;
+  appTheme: AppTheme;
+  setAppTheme: (theme: AppTheme) => void;
+  tableStyle: TableStyle;
+  setTableStyle: (style: TableStyle) => void;
+  addPurchase: (purchase: Omit<FishPurchase, "id" | "total" | "totalPrice">) => void;
+  addMultiplePurchases: (companyName: string, buyerName: string, date: string, entries: Array<{
+    fishName: string;
+    sizeKg: number;
+    quantity: number;
+    pricePerUnit: number;
+  }>) => void;
+  purchases: FishPurchase[];
+  setPurchases: (purchases: FishPurchase[]) => void;
+  
+  // Added properties to fix component errors
+  login?: (email: string, password: string) => Promise<void>;
+  signup?: (email: string, password: string) => Promise<void>;
+  logout?: () => Promise<void>;
+  isLoading?: boolean;
+  timeFrame?: TimeFrame;
+  setTimeFrame?: (timeFrame: TimeFrame) => void;
+  spendingByFishType?: any[];
+  purchasesByMonth?: any[];
 }
 
 // Common fish names for dropdown selection
