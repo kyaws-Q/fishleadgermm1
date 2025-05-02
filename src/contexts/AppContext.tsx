@@ -1,206 +1,115 @@
-
-import React, { createContext, useContext, useState, useEffect } from "react";
-import { FishPurchase, FishEntry, User, TimeFrame, TableStyle, AppTheme } from "@/types";
-import { 
-  initialMockPurchases, 
-  calculateTotalSpending,
-  calculateSpendingByFishType,
-  getPurchasesByMonth 
-} from "@/services/mockData";
+import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { AppTheme, FishPurchase, TableStyle } from "@/types";
+import { mockPurchases } from "@/services/mockData";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
-interface AppContextType {
-  user: User | null;
-  purchases: FishPurchase[];
-  isLoading: boolean;
-  timeFrame: TimeFrame;
-  totalSpending: number;
-  spendingByFishType: Record<string, number>;
-  purchasesByMonth: Record<string, number>;
-  tableStyle: TableStyle;
-  appTheme: AppTheme;
+interface AppContextProps {
+  user: { id: string; email: string } | null;
   companyName: string;
-  setTimeFrame: (timeFrame: TimeFrame) => void;
-  setTableStyle: (style: TableStyle) => void;
-  setAppTheme: (theme: AppTheme) => void;
   setCompanyName: (name: string) => void;
-  addPurchase: (purchase: Omit<FishPurchase, "id" | "totalPrice">) => void;
-  addMultiplePurchases: (companyName: string, buyerName: string, purchaseDate: string, entries: FishEntry[]) => void;
-  login: (email: string, password: string) => Promise<void>;
-  signup: (email: string, password: string, name?: string) => Promise<void>;
-  logout: () => void;
+  appTheme: AppTheme;
+  setAppTheme: (theme: AppTheme) => void;
+  tableStyle: TableStyle;
+  setTableStyle: (style: TableStyle) => void;
+  addPurchase: (purchase: Omit<FishPurchase, "id" | "total" | "totalPrice">) => void;
+  addMultiplePurchases: (companyName: string, buyerName: string, date: string, entries: Array<{
+    fishName: string;
+    sizeKg: number;
+    quantity: number;
+    pricePerUnit: number;
+  }>) => void;
+  purchases: FishPurchase[];
+  setPurchases: (purchases: FishPurchase[]) => void;
 }
 
-const AppContext = createContext<AppContextType | undefined>(undefined);
+const AppContext = createContext<AppContextProps | undefined>(undefined);
 
-export function AppProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [purchases, setPurchases] = useState<FishPurchase[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [timeFrame, setTimeFrame] = useState<TimeFrame>('month');
-  const [totalSpending, setTotalSpending] = useState(0);
-  const [spendingByFishType, setSpendingByFishType] = useState<Record<string, number>>({});
-  const [purchasesByMonth, setPurchasesByMonth] = useState<Record<string, number>>({});
-  const [tableStyle, setTableStyle] = useState<TableStyle>("excel");
+export function AppProvider({ children }: { children: ReactNode }) {
+  const [user, setUser] = useState<{ id: string; email: string } | null>(null);
+  const [companyName, setCompanyName] = useState("Fish Export Company");
   const [appTheme, setAppTheme] = useState<AppTheme>("light");
-  const [companyName, setCompanyName] = useState<string>("FishLedger");
+  const [tableStyle, setTableStyle] = useState<TableStyle>("excel"); // Updated to match the TableStyle type
+  const [purchases, setPurchases] = useState<FishPurchase[]>(mockPurchases);
 
-  // Check if user is already logged in
   useEffect(() => {
-    const storedUser = localStorage.getItem('fishLedgerUser');
-    if (storedUser) {
-      try {
-        setUser(JSON.parse(storedUser));
-      } catch (error) {
-        console.error('Failed to parse stored user data:', error);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session) {
+        setUser({ id: session.user.id, email: session.user.email });
+      } else {
+        setUser(null);
       }
-    }
-    setIsLoading(false);
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
-  // Load purchase data when user changes
-  useEffect(() => {
-    if (user) {
-      // In a real app, we'd fetch from API based on user ID
-      // For now, use mock data
-      setPurchases(initialMockPurchases);
-    } else {
-      setPurchases([]);
-    }
-  }, [user]);
-
-  // Calculate derived data when purchases or timeframe changes
-  useEffect(() => {
-    setTotalSpending(calculateTotalSpending(purchases));
-    setSpendingByFishType(calculateSpendingByFishType(purchases));
-    setPurchasesByMonth(getPurchasesByMonth(purchases));
-  }, [purchases, timeFrame]);
-
   // Add a new purchase
-  const addPurchase = (purchase: Omit<FishPurchase, "id" | "totalPrice">) => {
+  const addPurchase = (purchase: Omit<FishPurchase, "id" | "total" | "totalPrice">) => {
     const newPurchase: FishPurchase = {
       ...purchase,
-      id: `purchase-${Date.now()}`,
-      totalPrice: purchase.sizeKg * purchase.quantity * purchase.pricePerUnit
+      id: `purchase_${Date.now()}_${Math.floor(Math.random() * 10000)}`,
+      total: purchase.sizeKg * purchase.quantity * purchase.pricePerUnit,
+      totalPrice: purchase.sizeKg * purchase.quantity * purchase.pricePerUnit,
+      purchaseDate: purchase.date, // Make sure purchaseDate is set
     };
-    
-    setPurchases(prev => [newPurchase, ...prev]);
-    toast.success("Purchase added successfully");
+    setPurchases([...purchases, newPurchase]);
+    toast.success("Purchase added successfully!");
   };
 
-  // Add multiple purchases at once
-  const addMultiplePurchases = (companyName: string, buyerName: string, purchaseDate: string, entries: FishEntry[]) => {
-    if (entries.length === 0) {
-      toast.error("No fish entries to add");
-      return;
-    }
-    
-    const timestamp = Date.now();
-    const newPurchases: FishPurchase[] = entries.map((entry, index) => {
+  // Add multiple purchases at once (from the PurchaseForm)
+  const addMultiplePurchases = (companyName: string, buyerName: string, date: string, entries: Array<{
+    fishName: string;
+    sizeKg: number;
+    quantity: number;
+    pricePerUnit: number;
+  }>) => {
+    const newPurchases = entries.map((entry) => {
+      const total = entry.sizeKg * entry.quantity * entry.pricePerUnit;
       return {
-        ...entry,
-        id: `purchase-${timestamp}-${index}`,
-        purchaseDate,
+        id: `purchase_${Date.now()}_${Math.floor(Math.random() * 10000)}`,
         companyName,
         buyerName,
-        totalPrice: entry.sizeKg * entry.quantity * entry.pricePerUnit
+        date,
+        purchaseDate: date, // Make sure purchaseDate is set
+        fishName: entry.fishName,
+        sizeKg: entry.sizeKg,
+        quantity: entry.quantity,
+        pricePerUnit: entry.pricePerUnit,
+        total,
+        totalPrice: total // Make sure totalPrice is set
       };
     });
     
-    setPurchases(prev => [...newPurchases, ...prev]);
-    toast.success(`${entries.length} purchases added successfully`);
-  };
-
-  // Mock login function
-  const login = async (email: string, password: string) => {
-    setIsLoading(true);
-    
-    // Simulate API request delay
-    await new Promise(resolve => setTimeout(resolve, 800));
-    
-    // Simple validation
-    if (!email || !password) {
-      setIsLoading(false);
-      throw new Error("Email and password are required");
-    }
-    
-    // Mock successful login
-    const mockUser: User = {
-      id: "user-1",
-      email,
-      name: email.split('@')[0]
-    };
-    
-    setUser(mockUser);
-    localStorage.setItem('fishLedgerUser', JSON.stringify(mockUser));
-    setIsLoading(false);
-    toast.success("Logged in successfully");
-  };
-
-  // Mock signup function
-  const signup = async (email: string, password: string, name?: string) => {
-    setIsLoading(true);
-    
-    // Simulate API request delay
-    await new Promise(resolve => setTimeout(resolve, 800));
-    
-    // Simple validation
-    if (!email || !password) {
-      setIsLoading(false);
-      throw new Error("Email and password are required");
-    }
-    
-    // Mock successful signup
-    const mockUser: User = {
-      id: "user-1",
-      email,
-      name: name || email.split('@')[0]
-    };
-    
-    setUser(mockUser);
-    localStorage.setItem('fishLedgerUser', JSON.stringify(mockUser));
-    setIsLoading(false);
-    toast.success("Account created successfully");
-  };
-
-  // Logout function
-  const logout = () => {
-    setUser(null);
-    localStorage.removeItem('fishLedgerUser');
-    toast.success("Logged out successfully");
+    setPurchases([...purchases, ...newPurchases]);
+    toast.success(`Added ${newPurchases.length} purchase records!`);
   };
 
   return (
     <AppContext.Provider value={{
       user,
-      purchases,
-      isLoading,
-      timeFrame,
-      totalSpending,
-      spendingByFishType,
-      purchasesByMonth,
-      tableStyle,
-      appTheme,
       companyName,
-      setTimeFrame,
-      setTableStyle,
-      setAppTheme,
       setCompanyName,
+      appTheme,
+      setAppTheme,
+      tableStyle,
+      setTableStyle,
       addPurchase,
       addMultiplePurchases,
-      login,
-      signup,
-      logout
+      purchases,
+      setPurchases
     }}>
       {children}
     </AppContext.Provider>
   );
 }
 
-export const useApp = () => {
+export function useApp() {
   const context = useContext(AppContext);
   if (context === undefined) {
     throw new Error("useApp must be used within an AppProvider");
   }
   return context;
-};
+}

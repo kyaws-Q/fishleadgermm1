@@ -1,82 +1,74 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { Shipment, FishEntry, ShipmentWithDetails } from '@/types';
+import { Shipment, FishEntry } from '@/types';
 
+// Get all shipments with buyer information
 export async function getShipments() {
   try {
     const { data, error } = await supabase
       .from('shipments')
       .select(`
         *,
-        buyer:buyers(name)
+        buyer:buyer_id(name)
       `)
-      .order('created_at', { ascending: false });
+      .order('shipment_date', { ascending: false });
 
     if (error) throw error;
-    return data as (Shipment & { buyer: { name: string } })[];
+    
+    // Type assertion to handle Supabase's return type
+    return data as unknown as (Shipment & { buyer: { name: string } })[];
   } catch (error) {
     console.error('Error fetching shipments:', error);
     return [];
   }
 }
 
-export async function getShipmentWithDetails(shipmentId: string): Promise<ShipmentWithDetails | null> {
+// Get a single shipment with all related data
+export async function getShipmentDetails(shipmentId: string) {
   try {
-    // Fetch shipment
+    // Get the shipment
     const { data: shipment, error: shipmentError } = await supabase
       .from('shipments')
-      .select('*')
+      .select(`
+        *,
+        buyer:buyer_id(*)
+      `)
       .eq('id', shipmentId)
       .single();
 
     if (shipmentError) throw shipmentError;
-    if (!shipment) return null;
 
-    // Fetch buyer
-    const { data: buyer, error: buyerError } = await supabase
-      .from('buyers')
-      .select('*')
-      .eq('id', shipment.buyer_id)
-      .single();
-
-    if (buyerError) throw buyerError;
-
-    // Fetch all entries
+    // Get the fish entries for this shipment
     const { data: entries, error: entriesError } = await supabase
       .from('fish_entries')
       .select('*')
-      .eq('shipment_id', shipmentId)
-      .order('fish_name');
+      .eq('shipment_id', shipment.id);
 
     if (entriesError) throw entriesError;
 
-    // Group entries by fish_name for reporting
-    const entriesByFish = entries.reduce((groups: Record<string, FishEntry[]>, entry) => {
-      const group = groups[entry.fish_name] || [];
-      group.push(entry);
-      groups[entry.fish_name] = group;
+    // Group entries by fish name
+    const grouped_entries = entries.reduce((groups: any[], entry: FishEntry) => {
+      const existingGroup = groups.find(g => g.fish_name === entry.fish_name);
+      if (existingGroup) {
+        existingGroup.entries.push(entry);
+        existingGroup.total_usd += entry.total_usd;
+      } else {
+        groups.push({
+          fish_name: entry.fish_name,
+          entries: [entry],
+          total_usd: entry.total_usd
+        });
+      }
       return groups;
-    }, {});
-
-    // Create grouped entries with totals
-    const grouped_entries = Object.keys(entriesByFish).map(fish_name => {
-      const fishEntries = entriesByFish[fish_name];
-      const total_usd = fishEntries.reduce((sum, entry) => sum + entry.total_usd, 0);
-      
-      return {
-        fish_name,
-        entries: fishEntries,
-        total_usd
-      };
-    });
+    }, []);
 
     // Calculate grand total
-    const grand_total = entries.reduce((sum, entry) => sum + entry.total_usd, 0);
+    const grand_total = entries.reduce((sum: number, entry: FishEntry) => sum + entry.total_usd, 0);
 
     return {
-      shipment: shipment as Shipment,
-      buyer: buyer as any,
-      entries: entries as FishEntry[],
+      shipment,
+      buyer: shipment.buyer,
+      entries,
       grouped_entries,
       grand_total
     };
@@ -86,39 +78,34 @@ export async function getShipmentWithDetails(shipmentId: string): Promise<Shipme
   }
 }
 
-export async function createShipment(
-  shipment: Omit<Shipment, 'id' | 'user_id' | 'created_at'>, 
-  entries: Omit<FishEntry, 'id' | 'shipment_id' | 'created_at' | 'total_usd'>[]
-) {
+// Create a new shipment with fish entries
+export async function createShipment(shipmentData: Omit<Shipment, 'id' | 'created_at'>, entriesData: Omit<FishEntry, 'id' | 'created_at' | 'shipment_id'>[]) {
   try {
-    // Create shipment
-    const { data: newShipment, error: shipmentError } = await supabase
+    // Insert the shipment first
+    const { data: shipment, error: shipmentError } = await supabase
       .from('shipments')
-      .insert({
-        ...shipment,
-      })
+      .insert([shipmentData])
       .select()
       .single();
 
     if (shipmentError) throw shipmentError;
-    
-    // Prepare entries with shipment_id
-    const shipmentEntries = entries.map(entry => ({
+
+    // Now insert the fish entries with the new shipment ID
+    const fishEntriesWithShipmentId = entriesData.map(entry => ({
       ...entry,
-      shipment_id: newShipment.id,
+      shipment_id: shipment.id
     }));
 
-    // Create entries
-    const { data: newEntries, error: entriesError } = await supabase
+    const { data: entries, error: entriesError } = await supabase
       .from('fish_entries')
-      .insert(shipmentEntries)
+      .insert(fishEntriesWithShipmentId)
       .select();
 
     if (entriesError) throw entriesError;
 
     return {
-      shipment: newShipment,
-      entries: newEntries
+      shipment,
+      entries
     };
   } catch (error) {
     console.error('Error creating shipment:', error);

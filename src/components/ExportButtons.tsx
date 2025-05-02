@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { FileText, FileSpreadsheet, File, Download } from "lucide-react";
 import { useApp } from "@/contexts/AppContext";
@@ -20,6 +19,7 @@ export function ExportButtons() {
     setTimeout(() => {
       switch (format) {
         case 'xlsx':
+        case 'excel':
           exportToExcel(purchases, companyName);
           break;
         case 'csv':

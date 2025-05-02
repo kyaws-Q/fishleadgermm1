@@ -24,7 +24,7 @@ export function PurchaseTable() {
   const { purchases, tableStyle, companyName } = useApp();
   const [filteredPurchases, setFilteredPurchases] = useState<FishPurchase[]>(purchases);
   const [searchQuery, setSearchQuery] = useState("");
-  const [sortField, setSortField] = useState<keyof FishPurchase>("purchaseDate");
+  const [sortField, setSortField] = useState<keyof FishPurchase>("date");
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
   const [dateFilter, setDateFilter] = useState<DateFilter>("all");
   const [startDate, setStartDate] = useState<Date | undefined>(undefined);

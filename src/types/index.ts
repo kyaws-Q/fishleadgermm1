@@ -61,22 +61,25 @@ export interface FishEntryFormData {
 
 // Additional types needed for other components
 export type AppTheme = "light" | "dark" | "blue" | "green";
-export type TableStyle = "default" | "bordered" | "striped" | "compact";
-export type TimeFrame = "today" | "week" | "month" | "year" | "all";
-export type DateFilter = "all" | "today" | "week" | "month" | "custom";
+export type TableStyle = "default" | "bordered" | "striped" | "compact" | "modern" | "excel";
+export type TimeFrame = "today" | "week" | "month" | "year" | "all" | "3months" | "6months";
+export type DateFilter = "all" | "today" | "week" | "month" | "custom" | "yesterday" | "3months" | "year";
 export type SortDirection = "asc" | "desc";
-export type ExportFormat = "excel" | "pdf" | "csv";
+export type ExportFormat = "excel" | "pdf" | "csv" | "xlsx";
 
+// Modified FishPurchase interface to match what's being used in the components
 export interface FishPurchase {
   id: string;
   companyName: string;
   buyerName: string;
   date: string;
+  purchaseDate: string; // Added to match what's used in components
   fishName: string;
   sizeKg: number;
   quantity: number;
   pricePerUnit: number;
   total: number;
+  totalPrice: number; // Added to match what's used in components
 }
 
 export interface User {

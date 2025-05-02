@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useApp } from "@/contexts/AppContext";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
@@ -18,6 +17,7 @@ interface PurchaseFormProps {
   onClose: () => void;
 }
 
+// Updated to closely match the FishPurchase interface
 interface FormFishEntry {
   fishName: string;
   sizeKg: number;
@@ -97,6 +97,7 @@ export function PurchaseForm({ open, onClose }: PurchaseFormProps) {
       return;
     }
     
+    // Convert FormFishEntry to match what addMultiplePurchases expects
     addMultiplePurchases(companyName, buyerName, purchaseDate, validEntries);
     onClose();
     
