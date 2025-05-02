@@ -2,7 +2,6 @@
 // Buyer types
 export interface Buyer {
   id: string;
-  user_id: string;
   name: string;
   address?: string;
   created_at: string;
@@ -15,8 +14,8 @@ export interface Shipment {
   buyer_id: string;
   shipment_date: string;
   container_number?: string;
-  status?: string;  // Adding status field to match Supabase schema
-  tracking_number?: string; // Adding tracking_number field to match Supabase schema
+  status?: string;
+  tracking_number?: string;
   created_at: string;
 }
 
@@ -75,13 +74,13 @@ export interface FishPurchase {
   companyName: string;
   buyerName: string;
   date: string;
-  purchaseDate: string;  // Including purchaseDate to match usage in components
+  purchaseDate: string;
   fishName: string;
   sizeKg: number;
   quantity: number;
   pricePerUnit: number;
   total: number;
-  totalPrice: number;  // Including totalPrice to match usage in components
+  totalPrice: number;
 }
 
 export interface User {
@@ -93,7 +92,7 @@ export interface User {
 
 // Extended AppContextProps to include all properties used in components
 export interface AppContextProps {
-  user: { id: string; email: string; name?: string } | null;
+  user: User | null;
   companyName: string;
   setCompanyName: (name: string) => void;
   appTheme: AppTheme;

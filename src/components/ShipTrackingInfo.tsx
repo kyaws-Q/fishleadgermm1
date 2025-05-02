@@ -10,6 +10,8 @@ interface ShipStatus {
   status: string;
   location: string;
   eta: string;
+  route: string;
+  line: string;
 }
 
 export function ShipTrackingInfo() {
@@ -29,7 +31,9 @@ export function ShipTrackingInfo() {
         name: `Cargo Ship ${shipTrackingId}`,
         status: "In Transit",
         location: "Pacific Ocean, 34.0522° N, 118.2437° W",
-        eta: "May 10, 2025"
+        eta: "May 10, 2025",
+        route: "Myanmar to Singapore to Saudi", 
+        line: "Maersk Line"
       };
       
       setShipStatus(mockShipData);
@@ -77,7 +81,7 @@ export function ShipTrackingInfo() {
             </p>
             <p className="flex justify-between">
               <span className="text-muted-foreground">Route:</span>
-              <span className="font-medium truncate max-w-[120px]">Myanmar to Singapore to Saudi</span>
+              <span className="font-medium truncate max-w-[120px]">{shipStatus.route}</span>
             </p>
             <p className="flex justify-between">
               <span className="text-muted-foreground">Location:</span>
@@ -91,7 +95,7 @@ export function ShipTrackingInfo() {
             </p>
             <p className="flex justify-between">
               <span className="text-muted-foreground">Line:</span>
-              <span className="font-medium">Maersk Line</span>
+              <span className="font-medium">{shipStatus.line}</span>
             </p>
           </div>
         )}

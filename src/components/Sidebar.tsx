@@ -98,6 +98,16 @@ export function Sidebar() {
               </Link>
             </li>
           ))}
+          <li>
+            <Button
+              variant="ghost"
+              className="w-full justify-start text-destructive hover:bg-destructive/10 hover:text-destructive"
+              onClick={handleLogout}
+            >
+              <LogOut className="mr-2 h-4 w-4" />
+              Sign Out
+            </Button>
+          </li>
         </ul>
       </nav>
 
@@ -117,15 +127,6 @@ export function Sidebar() {
               {user.email}
             </p>
           </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleLogout}
-            className="flex items-center gap-2 text-destructive hover:text-destructive hover:bg-destructive/10"
-          >
-            <LogOut className="h-4 w-4" />
-            <span className="sr-only md:not-sr-only md:inline-block">Sign out</span>
-          </Button>
         </div>
       </div>
     </div>
