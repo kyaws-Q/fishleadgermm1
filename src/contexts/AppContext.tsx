@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { AppTheme, FishPurchase, TableStyle, AppContextProps, TimeFrame } from "@/types";
 import { supabase } from "@/integrations/supabase/client";
@@ -13,10 +12,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [appTheme, setAppTheme] = useState<AppTheme>("light");
   const [tableStyle, setTableStyle] = useState<TableStyle>("excel"); 
   const [purchases, setPurchases] = useState<FishPurchase[]>(initialMockPurchases);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
   const [timeFrame, setTimeFrame] = useState<TimeFrame>("month");
 
   useEffect(() => {
+    // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (session) {
         setUser({ 
@@ -27,6 +27,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
       } else {
         setUser(null);
       }
+      setIsLoading(false);
+    });
+
+    // Check for existing session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        setUser({ 
+          id: session.user.id, 
+          email: session.user.email || '',
+          name: session.user.user_metadata?.name
+        });
+      }
+      setIsLoading(false);
     });
 
     return () => {
@@ -74,43 +87,59 @@ export function AppProvider({ children }: { children: ReactNode }) {
     toast.success(`Added ${newPurchases.length} purchase records!`);
   };
 
-  // Simulate login functionality for component compatibility
+  // Login functionality using Supabase
   const login = async (email: string, password: string) => {
     setIsLoading(true);
     try {
-      // Placeholder for actual login logic
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
+      
+      if (error) throw error;
+      
       toast.success("Login successful!");
+      return data;
     } catch (error) {
-      toast.error("Login failed");
+      toast.error(error instanceof Error ? error.message : "Login failed");
+      throw error;
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Simulate signup functionality for component compatibility
+  // Signup functionality using Supabase
   const signup = async (email: string, password: string) => {
     setIsLoading(true);
     try {
-      // Placeholder for actual signup logic
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      toast.success("Signup successful!");
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password
+      });
+      
+      if (error) throw error;
+      
+      toast.success("Signup successful! Please check your email.");
+      return data;
     } catch (error) {
-      toast.error("Signup failed");
+      toast.error(error instanceof Error ? error.message : "Signup failed");
+      throw error;
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Simulate logout functionality for component compatibility
+  // Logout functionality using Supabase
   const logout = async () => {
     setIsLoading(true);
     try {
-      // Placeholder for actual logout logic
-      await new Promise(resolve => setTimeout(resolve, 500));
+      const { error } = await supabase.auth.signOut();
+      
+      if (error) throw error;
+      
       toast.success("Logout successful!");
     } catch (error) {
-      toast.error("Logout failed");
+      toast.error(error instanceof Error ? error.message : "Logout failed");
     } finally {
       setIsLoading(false);
     }

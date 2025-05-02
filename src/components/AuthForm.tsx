@@ -1,15 +1,18 @@
 
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useApp } from "@/contexts/AppContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 export function AuthForm() {
   const { login, signup, isLoading } = useApp();
   const [isLoginForm, setIsLoginForm] = useState(true);
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -29,11 +32,33 @@ export function AuthForm() {
     
     try {
       if (isLoginForm) {
-        // Pass only email and password to login
-        if (login) await login(formData.email, formData.password);
+        // Connect to Supabase for login
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email: formData.email,
+          password: formData.password
+        });
+        
+        if (error) throw error;
+        
+        toast.success("Login successful!");
+        // Redirect to dashboard after successful login
+        navigate("/dashboard");
       } else {
-        // Pass only email and password to signup
-        if (signup) await signup(formData.email, formData.password);
+        // Connect to Supabase for signup
+        const { data, error } = await supabase.auth.signUp({
+          email: formData.email,
+          password: formData.password,
+          options: {
+            data: {
+              name: formData.name
+            }
+          }
+        });
+        
+        if (error) throw error;
+        
+        toast.success("Account created successfully! Please check your email to verify your account.");
+        // For signed up users, we stay on the login page as they need to verify email
       }
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Authentication failed");
