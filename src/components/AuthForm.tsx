@@ -32,7 +32,7 @@ export function AuthForm() {
         // Pass only email and password to login
         if (login) await login(formData.email, formData.password);
       } else {
-        // Pass only email and password to signup
+        // Pass email and password to signup
         if (signup) await signup(formData.email, formData.password);
       }
     } catch (error) {

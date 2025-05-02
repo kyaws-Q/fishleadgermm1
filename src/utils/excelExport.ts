@@ -7,7 +7,22 @@ export async function exportShipmentToExcel(shipmentData: ShipmentWithDetails, c
   const workbook = new ExcelJS.Workbook();
   const sheet = workbook.addWorksheet("Fish Shipment");
 
-  // Set column widths
+  // Set A4 paper size and orientation
+  sheet.pageSetup = {
+    paperSize: 9, // A4
+    orientation: 'portrait',
+    margins: {
+      left: 0.4,
+      right: 0.4,
+      top: 0.4,
+      bottom: 0.4,
+      header: 0.2,
+      footer: 0.2
+    },
+    fitToPage: true
+  };
+
+  // Set column widths that fit on A4 paper
   sheet.columns = [
     { header: 'NO.', key: 'no', width: 5 },
     { header: 'ITEM', key: 'item', width: 15 },
@@ -78,7 +93,7 @@ export async function exportShipmentToExcel(shipmentData: ShipmentWithDetails, c
       });
       
       // Add styling to data rows
-      row.eachCell((cell) => {
+      row.eachCell((cell, colNumber) => {
         cell.border = {
           top: { style: 'thin' },
           left: { style: 'thin' },
@@ -91,7 +106,7 @@ export async function exportShipmentToExcel(shipmentData: ShipmentWithDetails, c
           cell.alignment = { horizontal: 'right' };
           
           // Format currency cells
-          if (cell.column === 7 || cell.column === 8) {
+          if (colNumber === 7 || colNumber === 8) {
             cell.numFmt = '$#,##0.00';
           }
         }
@@ -113,7 +128,7 @@ export async function exportShipmentToExcel(shipmentData: ShipmentWithDetails, c
     });
     
     // Style the subtotal row
-    subtotalRow.eachCell((cell) => {
+    subtotalRow.eachCell((cell, colNumber) => {
       cell.font = { bold: true };
       cell.border = {
         top: { style: 'thin' },
@@ -123,7 +138,7 @@ export async function exportShipmentToExcel(shipmentData: ShipmentWithDetails, c
       };
       
       // Format the total
-      if (cell.column === 8) {
+      if (colNumber === 8) {
         cell.numFmt = '$#,##0.00';
         cell.alignment = { horizontal: 'right' };
         cell.fill = {
@@ -151,7 +166,7 @@ export async function exportShipmentToExcel(shipmentData: ShipmentWithDetails, c
   });
   
   // Style the grand total row
-  grandTotalRow.eachCell((cell) => {
+  grandTotalRow.eachCell((cell, colNumber) => {
     cell.font = { bold: true };
     cell.border = {
       top: { style: 'double' },
@@ -160,7 +175,7 @@ export async function exportShipmentToExcel(shipmentData: ShipmentWithDetails, c
       right: { style: 'thin' }
     };
     
-    if (cell.column === 8) {
+    if (colNumber === 8) {
       cell.numFmt = '$#,##0.00';
       cell.alignment = { horizontal: 'right' };
       cell.fill = {
@@ -170,7 +185,7 @@ export async function exportShipmentToExcel(shipmentData: ShipmentWithDetails, c
       };
     }
     
-    if (cell.column === 2) {
+    if (colNumber === 2) {
       cell.alignment = { horizontal: 'left' };
     }
   });

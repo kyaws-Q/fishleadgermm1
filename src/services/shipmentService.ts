@@ -1,186 +1,171 @@
 
-import { supabase } from '@/integrations/supabase/client';
-import { Shipment, FishEntry, ShipmentWithDetails } from '@/types';
+import { supabase } from "@/integrations/supabase/client";
+import { Buyer, FishEntry, GroupedFishEntry, Shipment, ShipmentWithDetails } from "@/types";
 
 // Get all shipments with buyer information
 export async function getShipments() {
   try {
     const { data, error } = await supabase
-      .from('shipments')
+      .from("shipments")
       .select(`
         *,
         buyer:buyer_id(name)
       `)
       .order('shipment_date', { ascending: false });
 
-    if (error) throw error;
-    
-    // Convert the Supabase response to match our application's type structure
-    const transformedData = data?.map(item => ({
-      id: String(item.id),
-      user_id: item.user_id || "unknown",
-      buyer_id: String(item.buyer_id),
-      shipment_date: item.shipment_date,
-      container_number: item.tracking_number,
-      status: item.status,
-      created_at: item.created_at || new Date().toISOString(),
-      buyer: { name: item.buyer?.name || "Unknown Buyer" }
-    }));
-    
-    return transformedData || [];
+    if (error) {
+      console.error("Error fetching shipments:", error);
+      throw new Error(error.message);
+    }
+
+    return data as (Shipment & { buyer: { name: string } })[];
   } catch (error) {
-    console.error('Error fetching shipments:', error);
-    return [];
+    console.error("Shipment service error:", error);
+    throw error;
   }
 }
 
-// Get a single shipment with all related data
-export async function getShipmentDetails(shipmentId: string) {
+// Get a specific shipment with all related information
+export async function getShipmentDetails(id: string | number): Promise<ShipmentWithDetails> {
   try {
-    // Get the shipment
+    // Get the shipment and buyer information
     const { data: shipmentData, error: shipmentError } = await supabase
-      .from('shipments')
+      .from("shipments")
       .select(`
         *,
         buyer:buyer_id(*)
       `)
-      .eq('id', parseInt(shipmentId, 10))
+      .eq('id', id)
       .single();
 
-    if (shipmentError) throw shipmentError;
-    
-    // Since fish_entries table isn't available in the Supabase schema,
-    // we'll mock this data for now
-    const mockFishEntries: FishEntry[] = [
-      {
-        id: `entry_${Date.now()}_1`,
-        shipment_id: shipmentId,
-        fish_name: "ROHU-G",
-        description: "2 UP",
-        net_kg_per_mc: 20,
-        qty_mc: 5,
-        qty_kgs: 100,
-        price_per_kg: 1.75,
-        total_usd: 175,
-        created_at: new Date().toISOString()
-      },
-      {
-        id: `entry_${Date.now()}_2`,
-        shipment_id: shipmentId,
-        fish_name: "KATLA-G",
-        description: "3 UP",
-        net_kg_per_mc: 25,
-        qty_mc: 8,
-        qty_kgs: 200,
-        price_per_kg: 2.10,
-        total_usd: 420,
-        created_at: new Date().toISOString()
-      }
-    ];
+    if (shipmentError) {
+      throw new Error(shipmentError.message);
+    }
 
-    // Group entries by fish name
-    const grouped_entries = mockFishEntries.reduce((groups: any[], entry: FishEntry) => {
-      const existingGroup = groups.find(g => g.fish_name === entry.fish_name);
-      if (existingGroup) {
-        existingGroup.entries.push(entry);
-        existingGroup.total_usd += entry.total_usd;
-      } else {
-        groups.push({
+    if (!shipmentData) {
+      throw new Error("Shipment not found");
+    }
+
+    // Get the fish entries for this shipment
+    const { data: entriesData, error: entriesError } = await supabase
+      .from("fish_entries")
+      .select('*')
+      .eq('shipment_id', shipmentData.id);
+
+    if (entriesError) {
+      throw new Error(entriesError.message);
+    }
+
+    const entries = entriesData || [];
+
+    // Group fish entries by fish_name
+    const groupedEntries = entries.reduce((groups: GroupedFishEntry[], entry: FishEntry) => {
+      // Find if there's already a group for this fish name
+      let group = groups.find(g => g.fish_name === entry.fish_name);
+      
+      if (!group) {
+        group = {
           fish_name: entry.fish_name,
-          entries: [entry],
-          total_usd: entry.total_usd
-        });
+          entries: [],
+          total_usd: 0
+        };
+        groups.push(group);
       }
+      
+      group.entries.push(entry);
+      group.total_usd += entry.total_usd;
+      
       return groups;
     }, []);
 
     // Calculate grand total
-    const grand_total = mockFishEntries.reduce((sum: number, entry: FishEntry) => sum + entry.total_usd, 0);
-    
-    // Transform shipment data to match our application structure
-    const shipment: Shipment = {
-      id: String(shipmentData.id),
-      user_id: shipmentData.user_id || "unknown",
-      buyer_id: String(shipmentData.buyer_id),
-      shipment_date: shipmentData.shipment_date,
-      container_number: shipmentData.tracking_number,
-      status: shipmentData.status,
-      created_at: shipmentData.created_at || new Date().toISOString()
-    };
-    
-    // Transform buyer data
-    const buyer = {
-      id: String(shipmentData.buyer.id),
-      user_id: shipmentData.buyer.user_id || "unknown",
-      name: shipmentData.buyer.name,
-      address: shipmentData.buyer.address,
-      created_at: shipmentData.buyer.created_at || new Date().toISOString()
+    const grandTotal = entries.reduce((sum: number, entry: FishEntry) => {
+      return sum + entry.total_usd;
+    }, 0);
+
+    // Create the complete shipment details object
+    const shipmentWithDetails: ShipmentWithDetails = {
+      shipment: {
+        id: shipmentData.id,
+        buyer_id: shipmentData.buyer_id,
+        shipment_date: shipmentData.shipment_date,
+        container_number: shipmentData.container_number || undefined,
+        status: shipmentData.status || undefined,
+        tracking_number: shipmentData.tracking_number || undefined,
+        created_at: shipmentData.created_at
+      },
+      buyer: {
+        id: shipmentData.buyer.id,
+        name: shipmentData.buyer.name,
+        address: shipmentData.buyer.address,
+        created_at: shipmentData.buyer.created_at
+      },
+      entries: entries,
+      grouped_entries: groupedEntries,
+      grand_total: grandTotal
     };
 
-    // Return transformed data
-    return {
-      shipment,
-      buyer,
-      entries: mockFishEntries,
-      grouped_entries,
-      grand_total
-    } as ShipmentWithDetails;
+    return shipmentWithDetails;
   } catch (error) {
-    console.error('Error fetching shipment details:', error);
-    return null;
+    console.error("Error getting shipment details:", error);
+    throw error;
   }
 }
 
 // Create a new shipment with fish entries
-export async function createShipment(shipmentData: Omit<Shipment, 'id' | 'created_at'>, entriesData: Omit<FishEntry, 'id' | 'created_at' | 'shipment_id'>[]) {
+export async function createShipment(
+  shipmentData: Omit<Shipment, "id" | "created_at">, 
+  fishEntries: Omit<FishEntry, "id" | "created_at" | "shipment_id">[]
+) {
   try {
-    // Prepare data for Supabase format
-    const supabaseShipmentData = {
-      buyer_id: parseInt(shipmentData.buyer_id, 10),
-      shipment_date: shipmentData.shipment_date,
-      status: shipmentData.status || 'pending',
-      tracking_number: shipmentData.container_number,
-      user_id: shipmentData.user_id
-    };
-    
-    // Insert the shipment first
-    const { data: shipment, error: shipmentError } = await supabase
-      .from('shipments')
-      .insert([supabaseShipmentData])
+    // Insert the shipment
+    const { data: newShipment, error: shipmentError } = await supabase
+      .from("shipments")
+      .insert({
+        buyer_id: shipmentData.buyer_id,
+        shipment_date: shipmentData.shipment_date,
+        container_number: shipmentData.container_number,
+        status: shipmentData.status || 'In Process',
+        tracking_number: shipmentData.tracking_number
+      })
       .select()
       .single();
 
-    if (shipmentError) throw shipmentError;
-    
-    // Since we don't have a fish_entries table in Supabase schema yet,
-    // we'll simulate the response for now
-    const mockEntries = entriesData.map((entry, index) => ({
-      id: `entry_${Date.now()}_${index}`,
-      shipment_id: String(shipment.id),
-      fish_name: entry.fish_name,
-      description: entry.description,
-      net_kg_per_mc: entry.net_kg_per_mc,
-      qty_mc: entry.qty_mc,
-      qty_kgs: entry.qty_kgs,
-      price_per_kg: entry.price_per_kg,
-      total_usd: entry.total_usd,
-      created_at: new Date().toISOString()
-    }));
+    if (shipmentError) {
+      throw new Error(shipmentError.message);
+    }
 
-    return {
-      shipment: {
-        id: String(shipment.id),
-        user_id: shipment.user_id || "unknown",
-        buyer_id: String(shipment.buyer_id),
-        shipment_date: shipment.shipment_date,
-        container_number: shipment.tracking_number,
-        status: shipment.status,
-        created_at: shipment.created_at || new Date().toISOString()
-      },
-      entries: mockEntries
-    };
+    if (!newShipment) {
+      throw new Error("Failed to create shipment");
+    }
+
+    // Insert the fish entries
+    if (fishEntries && fishEntries.length > 0) {
+      const entriesToInsert = fishEntries.map(entry => ({
+        shipment_id: newShipment.id,
+        fish_name: entry.fish_name,
+        description: entry.description,
+        net_kg_per_mc: entry.net_kg_per_mc,
+        qty_mc: entry.qty_mc,
+        qty_kgs: entry.qty_kgs,
+        price_per_kg: entry.price_per_kg,
+        total_usd: entry.total_usd
+      }));
+
+      const { error: entriesError } = await supabase
+        .from("fish_entries")
+        .insert(entriesToInsert);
+
+      if (entriesError) {
+        // Delete the shipment if entries failed to insert
+        await supabase.from("shipments").delete().eq("id", newShipment.id);
+        throw new Error(entriesError.message);
+      }
+    }
+
+    return newShipment;
   } catch (error) {
-    console.error('Error creating shipment:', error);
+    console.error("Error creating shipment:", error);
     throw error;
   }
 }

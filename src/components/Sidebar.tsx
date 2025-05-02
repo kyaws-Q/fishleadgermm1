@@ -12,6 +12,7 @@ import {
   LogOut,
   Ship,
 } from "lucide-react";
+import { ShipTrackingInfo } from "./ShipTrackingInfo";
 
 export function Sidebar() {
   const { user, logout } = useApp();
@@ -24,6 +25,10 @@ export function Sidebar() {
   if (!user) {
     return null;
   }
+  
+  const handleLogout = () => {
+    if (logout) logout();
+  };
 
   const navItems = [
     {
@@ -59,7 +64,7 @@ export function Sidebar() {
   ];
 
   return (
-    <div className="min-h-screen bg-white border-r">
+    <div className="min-h-screen bg-white border-r flex flex-col">
       {/* App Logo & Title */}
       <div className="p-4 border-b">
         <Link to="/" className="flex items-center gap-2">
@@ -96,8 +101,13 @@ export function Sidebar() {
         </ul>
       </nav>
 
+      {/* Ship Tracking Component */}
+      <div className="mt-auto p-4">
+        <ShipTrackingInfo />
+      </div>
+
       {/* User Section */}
-      <div className="absolute bottom-0 w-full p-4 border-t">
+      <div className="p-4 border-t">
         <div className="flex items-center justify-between">
           <div className="truncate">
             <p className="font-medium truncate">
@@ -109,11 +119,12 @@ export function Sidebar() {
           </div>
           <Button
             variant="ghost"
-            size="icon"
-            onClick={logout}
-            title="Log out"
+            size="sm"
+            onClick={handleLogout}
+            className="flex items-center gap-2 text-destructive hover:text-destructive hover:bg-destructive/10"
           >
-            <LogOut className="h-5 w-5" />
+            <LogOut className="h-4 w-4" />
+            <span className="sr-only md:not-sr-only md:inline-block">Sign out</span>
           </Button>
         </div>
       </div>

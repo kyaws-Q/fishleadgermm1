@@ -9,9 +9,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useState } from "react";
 import { useApp } from "@/contexts/AppContext";
 import { toast } from "sonner";
+import { LogOut } from "lucide-react";
 
 export default function SettingsPage() {
-  const { user } = useApp();
+  const { user, logout } = useApp();
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [currency, setCurrency] = useState("USD");
   const [theme, setTheme] = useState("light");
@@ -24,6 +25,13 @@ export default function SettingsPage() {
   const handleSavePreferences = (e: React.FormEvent) => {
     e.preventDefault();
     toast.success("Preferences saved");
+  };
+  
+  const handleSignOut = () => {
+    if (logout) {
+      logout();
+      toast.success("You have been signed out");
+    }
   };
   
   return (
@@ -118,6 +126,36 @@ export default function SettingsPage() {
               
               <Button type="submit">Save Preferences</Button>
             </form>
+          </CardContent>
+        </Card>
+        
+        {/* Sign Out Card */}
+        <Card className="border-destructive/20">
+          <CardHeader>
+            <CardTitle className="text-destructive">Account Actions</CardTitle>
+            <CardDescription>
+              Sign out or manage your account access
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="font-medium">Sign Out</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Sign out from your account on this device
+                  </p>
+                </div>
+                <Button 
+                  variant="destructive" 
+                  className="flex items-center gap-2"
+                  onClick={handleSignOut}
+                >
+                  <LogOut className="h-4 w-4" />
+                  Sign Out
+                </Button>
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>
