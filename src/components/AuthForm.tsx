@@ -32,35 +32,17 @@ export function AuthForm() {
     
     try {
       if (isLoginForm) {
-        // Connect to Supabase for login
-        const { data, error } = await supabase.auth.signInWithPassword({
-          email: formData.email,
-          password: formData.password
-        });
-        
-        if (error) throw error;
-        
+        // Use the login function from context instead of direct Supabase call
+        await login(formData.email, formData.password);
         toast.success("Login successful!");
-        // Redirect to dashboard after successful login
         navigate("/dashboard");
       } else {
-        // Connect to Supabase for signup
-        const { data, error } = await supabase.auth.signUp({
-          email: formData.email,
-          password: formData.password,
-          options: {
-            data: {
-              name: formData.name
-            }
-          }
-        });
-        
-        if (error) throw error;
-        
+        // Use the signup function from context
+        await signup(formData.email, formData.password);
         toast.success("Account created successfully! Please check your email to verify your account.");
-        // For signed up users, we stay on the login page as they need to verify email
       }
     } catch (error) {
+      console.error("Authentication error:", error);
       toast.error(error instanceof Error ? error.message : "Authentication failed");
     }
   };

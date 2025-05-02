@@ -9,7 +9,7 @@ export async function getShipments() {
       .from("shipments")
       .select(`
         *,
-        buyers!buyer_id(name)
+        buyers(name)
       `)
       .order('shipment_date', { ascending: false });
 
@@ -19,7 +19,7 @@ export async function getShipments() {
     }
 
     // Type assertion to match what Supabase returns with our application types
-    return data as unknown as (Shipment & { buyer: { name: string } })[];
+    return data as unknown as (Shipment & { buyers: { name: string } })[];
   } catch (error) {
     console.error("Shipment service error:", error);
     throw error;
@@ -37,7 +37,7 @@ export async function getShipmentDetails(id: string | number): Promise<ShipmentW
       .from("shipments")
       .select(`
         *,
-        buyers!buyer_id(*)
+        buyers(*)
       `)
       .eq('id', shipmentId)
       .single();
@@ -121,10 +121,10 @@ export async function getShipmentDetails(id: string | number): Promise<ShipmentW
         created_at: shipmentData.created_at || new Date().toISOString()
       },
       buyer: {
-        id: buyerData.id.toString(),
-        name: buyerData.name,
-        address: buyerData.address || "",
-        created_at: buyerData.created_at || new Date().toISOString()
+        id: buyerData?.id?.toString() || "unknown",
+        name: buyerData?.name || "Unknown Buyer",
+        address: buyerData?.address || "",
+        created_at: buyerData?.created_at || new Date().toISOString()
       },
       entries: entries,
       grouped_entries: groupedEntries,

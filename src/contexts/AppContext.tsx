@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { AppTheme, FishPurchase, TableStyle, AppContextProps, TimeFrame } from "@/types";
 import { supabase } from "@/integrations/supabase/client";
@@ -18,6 +19,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log("Auth state changed:", event, session);
       if (session) {
         setUser({ 
           id: session.user.id, 
@@ -32,6 +34,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
     // Check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
+      console.log("Initial session check:", session);
       if (session) {
         setUser({ 
           id: session.user.id, 
@@ -91,19 +94,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const login = async (email: string, password: string): Promise<void> => {
     setIsLoading(true);
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
+      const { error } = await supabase.auth.signInWithPassword({
         email,
         password
       });
       
       if (error) throw error;
       
-      toast.success("Login successful!");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Login failed");
-      throw error;
-    } finally {
       setIsLoading(false);
+      throw error;
     }
   };
 
@@ -111,19 +112,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const signup = async (email: string, password: string): Promise<void> => {
     setIsLoading(true);
     try {
-      const { data, error } = await supabase.auth.signUp({
+      const { error } = await supabase.auth.signUp({
         email,
         password
       });
       
       if (error) throw error;
       
-      toast.success("Signup successful! Please check your email.");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Signup failed");
-      throw error;
-    } finally {
       setIsLoading(false);
+      throw error;
     }
   };
 
