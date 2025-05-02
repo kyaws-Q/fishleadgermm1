@@ -9,7 +9,7 @@ export async function getShipments() {
       .from("shipments")
       .select(`
         *,
-        buyers(name)
+        buyer:buyer_id(*)
       `)
       .order('shipment_date', { ascending: false });
 
@@ -19,7 +19,7 @@ export async function getShipments() {
     }
 
     // Type assertion to match what Supabase returns with our application types
-    return data as unknown as (Shipment & { buyers: { name: string } })[];
+    return data as unknown as (Shipment & { buyer: Buyer })[];
   } catch (error) {
     console.error("Shipment service error:", error);
     throw error;
@@ -32,12 +32,12 @@ export async function getShipmentDetails(id: string | number): Promise<ShipmentW
     // Convert id to number if it's a string
     const shipmentId = typeof id === 'string' ? parseInt(id, 10) : id;
     
-    // Get the shipment and buyer information
+    // Get the shipment and buyer information using the correct foreign key syntax
     const { data: shipmentData, error: shipmentError } = await supabase
       .from("shipments")
       .select(`
         *,
-        buyers(*)
+        buyer:buyer_id(*)
       `)
       .eq('id', shipmentId)
       .single();
@@ -48,6 +48,11 @@ export async function getShipmentDetails(id: string | number): Promise<ShipmentW
 
     if (!shipmentData) {
       throw new Error("Shipment not found");
+    }
+
+    // Make sure buyer data exists
+    if (!shipmentData.buyer) {
+      console.error("Buyer data not found for shipment:", shipmentId);
     }
 
     // Mock data for fish entries since the fish_entries table doesn't exist in Supabase yet
@@ -106,9 +111,9 @@ export async function getShipmentDetails(id: string | number): Promise<ShipmentW
       return sum + entry.total_usd;
     }, 0);
 
-    // Map Supabase data to our application types
-    const buyerData = shipmentData.buyers;
-
+    // Extract buyer data safely with fallbacks
+    const buyerData = shipmentData.buyer || {};
+    
     const shipmentWithDetails: ShipmentWithDetails = {
       shipment: {
         id: shipmentData.id.toString(),
@@ -121,10 +126,10 @@ export async function getShipmentDetails(id: string | number): Promise<ShipmentW
         created_at: shipmentData.created_at || new Date().toISOString()
       },
       buyer: {
-        id: buyerData?.id?.toString() || "unknown",
-        name: buyerData?.name || "Unknown Buyer",
-        address: buyerData?.address || "",
-        created_at: buyerData?.created_at || new Date().toISOString()
+        id: buyerData.id?.toString() || "unknown",
+        name: buyerData.name || "Unknown Buyer",
+        address: buyerData.address || "",
+        created_at: buyerData.created_at || new Date().toISOString()
       },
       entries: entries,
       grouped_entries: groupedEntries,
