@@ -15,6 +15,8 @@ export interface Shipment {
   buyer_id: string;
   shipment_date: string;
   container_number?: string;
+  status?: string;  // Adding status field to match Supabase schema
+  tracking_number?: string; // Adding tracking_number field to match Supabase schema
   created_at: string;
 }
 
@@ -73,13 +75,13 @@ export interface FishPurchase {
   companyName: string;
   buyerName: string;
   date: string;
-  purchaseDate: string;
+  purchaseDate: string;  // Including purchaseDate to match usage in components
   fishName: string;
   sizeKg: number;
   quantity: number;
   pricePerUnit: number;
   total: number;
-  totalPrice: number;
+  totalPrice: number;  // Including totalPrice to match usage in components
 }
 
 export interface User {

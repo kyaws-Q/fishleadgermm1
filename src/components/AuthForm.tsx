@@ -29,9 +29,11 @@ export function AuthForm() {
     
     try {
       if (isLoginForm) {
-        await login(formData.email, formData.password);
+        // Pass only email and password to login
+        if (login) await login(formData.email, formData.password);
       } else {
-        await signup(formData.email, formData.password, formData.name);
+        // Pass only email and password to signup
+        if (signup) await signup(formData.email, formData.password);
       }
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Authentication failed");

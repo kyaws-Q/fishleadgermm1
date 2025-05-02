@@ -1,3 +1,4 @@
+
 import { FishPurchase } from "@/types";
 
 // Generate random price between min and max
@@ -42,7 +43,7 @@ export const mockPurchases: FishPurchase[] = [
     sizeKg: 2.8,
     quantity: 80,
     pricePerUnit: 7.20,
-    total: 2415,
+    total: 576,
     totalPrice: 576
   },
   {
@@ -55,7 +56,7 @@ export const mockPurchases: FishPurchase[] = [
     sizeKg: 1.5,
     quantity: 200,
     pricePerUnit: 3.50,
-    total: 2415,
+    total: 700,
     totalPrice: 700
   },
   {
@@ -68,7 +69,7 @@ export const mockPurchases: FishPurchase[] = [
     sizeKg: 4.0,
     quantity: 60,
     pricePerUnit: 6.00,
-    total: 2415,
+    total: 360,
     totalPrice: 360
   },
   {
@@ -81,7 +82,7 @@ export const mockPurchases: FishPurchase[] = [
     sizeKg: 0.8,
     quantity: 300,
     pricePerUnit: 4.25,
-    total: 2415,
+    total: 1275,
     totalPrice: 1275
   },
   {
@@ -94,7 +95,7 @@ export const mockPurchases: FishPurchase[] = [
     sizeKg: 2.2,
     quantity: 90,
     pricePerUnit: 5.50,
-    total: 2415,
+    total: 495,
     totalPrice: 495
   },
   {
@@ -107,7 +108,7 @@ export const mockPurchases: FishPurchase[] = [
     sizeKg: 1.2,
     quantity: 150,
     pricePerUnit: 8.00,
-    total: 2415,
+    total: 1200,
     totalPrice: 1200
   },
   {
@@ -120,7 +121,7 @@ export const mockPurchases: FishPurchase[] = [
     sizeKg: 0.6,
     quantity: 400,
     pricePerUnit: 9.50,
-    total: 2415,
+    total: 3800,
     totalPrice: 3800
   },
   {
@@ -133,7 +134,7 @@ export const mockPurchases: FishPurchase[] = [
     sizeKg: 0.4,
     quantity: 500,
     pricePerUnit: 12.00,
-    total: 2415,
+    total: 6000,
     totalPrice: 6000
   },
   {
@@ -146,7 +147,7 @@ export const mockPurchases: FishPurchase[] = [
     sizeKg: 3.0,
     quantity: 110,
     pricePerUnit: 4.75,
-    total: 2415,
+    total: 522.5,
     totalPrice: 522.5
   }
 ];

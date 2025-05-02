@@ -1,6 +1,6 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import { AppTheme, FishPurchase, TableStyle, AppContextProps } from "@/types";
+import { AppTheme, FishPurchase, TableStyle, AppContextProps, TimeFrame } from "@/types";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { mockPurchases as initialMockPurchases } from "@/services/mockData";
