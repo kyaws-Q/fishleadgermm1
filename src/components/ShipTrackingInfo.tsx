@@ -3,7 +3,8 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Ship } from "lucide-react";
+import { Ship, Anchor, Map, Calendar, CircleAlert, Search } from "lucide-react";
+import { toast } from "sonner";
 
 interface ShipStatus {
   name: string;
@@ -12,6 +13,10 @@ interface ShipStatus {
   eta: string;
   route: string;
   line: string;
+  originPort: string;
+  destinationPort: string;
+  vessel: string;
+  loadDate: string;
 }
 
 export function ShipTrackingInfo() {
@@ -23,6 +28,7 @@ export function ShipTrackingInfo() {
     if (!shipTrackingId.trim()) return;
     
     setIsTracking(true);
+    toast.loading("Tracking shipment...");
     
     // Simulate API call with timeout
     setTimeout(() => {
@@ -33,11 +39,17 @@ export function ShipTrackingInfo() {
         location: "Pacific Ocean, 34.0522° N, 118.2437° W",
         eta: "May 10, 2025",
         route: "Myanmar to Singapore to Saudi", 
-        line: "Maersk Line"
+        line: "Maersk Line",
+        originPort: "Yangon Port, Myanmar",
+        destinationPort: "Jeddah Islamic Port, Saudi Arabia",
+        vessel: "MSC VIVIANA",
+        loadDate: "April 15, 2025"
       };
       
       setShipStatus(mockShipData);
       setIsTracking(false);
+      toast.dismiss();
+      toast.success(`Tracking information found for ${shipTrackingId}`);
     }, 1500);
   };
   
@@ -62,6 +74,7 @@ export function ShipTrackingInfo() {
             disabled={isTracking || !shipTrackingId.trim()}
             className="h-8 px-2 text-xs"
           >
+            <Search className="h-3 w-3 mr-1" />
             Track
           </Button>
         </div>
@@ -75,28 +88,52 @@ export function ShipTrackingInfo() {
         {shipStatus && !isTracking && (
           <div className="text-xs space-y-1 border-t pt-2 mt-2">
             <p className="font-medium">{shipStatus.name}</p>
-            <p className="flex justify-between">
-              <span className="text-muted-foreground">Status:</span>
-              <span className="font-medium">{shipStatus.status}</span>
-            </p>
-            <p className="flex justify-between">
-              <span className="text-muted-foreground">Route:</span>
-              <span className="font-medium truncate max-w-[120px]">{shipStatus.route}</span>
-            </p>
-            <p className="flex justify-between">
-              <span className="text-muted-foreground">Location:</span>
-              <span className="font-medium truncate max-w-[120px]" title={shipStatus.location}>
-                {shipStatus.location}
-              </span>
-            </p>
-            <p className="flex justify-between">
-              <span className="text-muted-foreground">ETA:</span>
-              <span className="font-medium">{shipStatus.eta}</span>
-            </p>
-            <p className="flex justify-between">
-              <span className="text-muted-foreground">Line:</span>
-              <span className="font-medium">{shipStatus.line}</span>
-            </p>
+            
+            <div className="grid grid-cols-2 gap-x-2 gap-y-1">
+              <p className="flex items-center text-muted-foreground">
+                <CircleAlert className="h-3 w-3 mr-1" />
+                Status:
+              </p>
+              <p className="font-medium">{shipStatus.status}</p>
+              
+              <p className="flex items-center text-muted-foreground">
+                <Ship className="h-3 w-3 mr-1" />
+                Vessel:
+              </p>
+              <p className="font-medium">{shipStatus.vessel}</p>
+              
+              <p className="flex items-center text-muted-foreground">
+                <Anchor className="h-3 w-3 mr-1" />
+                Line:
+              </p>
+              <p className="font-medium">{shipStatus.line}</p>
+              
+              <p className="flex items-center text-muted-foreground">
+                <Map className="h-3 w-3 mr-1" />
+                Route:
+              </p>
+              <p className="font-medium truncate max-w-[120px]">{shipStatus.route}</p>
+            </div>
+            
+            <div className="mt-2 pt-1 border-t">
+              <p className="font-medium mb-1">Journey Details</p>
+              <div className="grid grid-cols-2 gap-x-2 gap-y-1">
+                <p className="text-muted-foreground">Origin:</p>
+                <p className="font-medium truncate max-w-[120px]" title={shipStatus.originPort}>{shipStatus.originPort}</p>
+                
+                <p className="text-muted-foreground">Destination:</p>
+                <p className="font-medium truncate max-w-[120px]" title={shipStatus.destinationPort}>{shipStatus.destinationPort}</p>
+                
+                <p className="text-muted-foreground">Load Date:</p>
+                <p className="font-medium">{shipStatus.loadDate}</p>
+                
+                <p className="text-muted-foreground">ETA:</p>
+                <p className="font-medium">{shipStatus.eta}</p>
+                
+                <p className="text-muted-foreground">Current:</p>
+                <p className="font-medium truncate max-w-[120px]" title={shipStatus.location}>{shipStatus.location}</p>
+              </div>
+            </div>
           </div>
         )}
       </CardContent>

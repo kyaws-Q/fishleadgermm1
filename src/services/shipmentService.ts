@@ -118,16 +118,20 @@ export async function getShipmentDetails(id: string | number): Promise<ShipmentW
       address: "",
       created_at: new Date().toISOString()
     };
+
+    // Define default values for potentially undefined properties
+    const trackingNumber = shipmentData.tracking_number || undefined;
+    const status = shipmentData.status || undefined;
     
     const shipmentWithDetails: ShipmentWithDetails = {
       shipment: {
         id: shipmentData.id.toString(),
-        user_id: "mock-user-id", // Assuming this is required by your type but not in DB
+        user_id: shipmentData.user_id || "mock-user-id",
         buyer_id: shipmentData.buyer_id.toString(),
         shipment_date: shipmentData.shipment_date,
-        container_number: shipmentData.tracking_number || undefined, // Using tracking_number as container_number
-        status: shipmentData.status || undefined,
-        tracking_number: shipmentData.tracking_number || undefined,
+        container_number: trackingNumber,
+        status: status,
+        tracking_number: trackingNumber,
         created_at: shipmentData.created_at || new Date().toISOString()
       },
       buyer: {
@@ -158,9 +162,10 @@ export async function createShipment(
     const { data: newShipment, error: shipmentError } = await supabase
       .from("shipments")
       .insert({
-        buyer_id: parseInt(shipmentData.buyer_id, 10),
+        buyer_id: shipmentData.buyer_id,
         shipment_date: shipmentData.shipment_date,
         status: shipmentData.status || 'In Process',
+        user_id: shipmentData.user_id, // Use the user_id from the input data
         tracking_number: shipmentData.tracking_number
       })
       .select()
