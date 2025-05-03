@@ -39,7 +39,7 @@ export async function getShipmentDetails(id: string | number): Promise<ShipmentW
         *,
         buyer:buyer_id(*)
       `)
-      .eq('id', shipmentId)
+      .eq('id', shipmentId.toString()) // Convert to string since eq expects a string
       .single();
 
     if (shipmentError) {
@@ -120,18 +120,16 @@ export async function getShipmentDetails(id: string | number): Promise<ShipmentW
     };
 
     // Define default values for potentially undefined properties
-    const trackingNumber = shipmentData.tracking_number || undefined;
-    const status = shipmentData.status || undefined;
-    
+    // Use optional chaining to safely access potentially missing properties
     const shipmentWithDetails: ShipmentWithDetails = {
       shipment: {
         id: shipmentData.id.toString(),
         user_id: shipmentData.user_id || "mock-user-id",
         buyer_id: shipmentData.buyer_id.toString(),
         shipment_date: shipmentData.shipment_date,
-        container_number: trackingNumber,
-        status: status,
-        tracking_number: trackingNumber,
+        container_number: (shipmentData as any).tracking_number || undefined,
+        status: (shipmentData as any).status || undefined,
+        tracking_number: (shipmentData as any).tracking_number || undefined,
         created_at: shipmentData.created_at || new Date().toISOString()
       },
       buyer: {

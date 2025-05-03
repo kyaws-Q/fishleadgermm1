@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Ship, Anchor, Map, Calendar, CircleAlert, Search } from "lucide-react";
+import { Ship, Anchor, Map, Calendar, CircleAlert, Search, Globe, Navigation, Package } from "lucide-react";
 import { toast } from "sonner";
 
 interface ShipStatus {
@@ -109,28 +109,43 @@ export function ShipTrackingInfo() {
               <p className="font-medium">{shipStatus.line}</p>
               
               <p className="flex items-center text-muted-foreground">
-                <Map className="h-3 w-3 mr-1" />
+                <Globe className="h-3 w-3 mr-1" />
                 Route:
               </p>
-              <p className="font-medium truncate max-w-[120px]">{shipStatus.route}</p>
+              <p className="font-medium truncate max-w-[120px]" title={shipStatus.route}>{shipStatus.route}</p>
             </div>
             
             <div className="mt-2 pt-1 border-t">
               <p className="font-medium mb-1">Journey Details</p>
               <div className="grid grid-cols-2 gap-x-2 gap-y-1">
-                <p className="text-muted-foreground">Origin:</p>
+                <p className="flex items-center text-muted-foreground">
+                  <Navigation className="h-3 w-3 mr-1" />
+                  Origin:
+                </p>
                 <p className="font-medium truncate max-w-[120px]" title={shipStatus.originPort}>{shipStatus.originPort}</p>
                 
-                <p className="text-muted-foreground">Destination:</p>
+                <p className="flex items-center text-muted-foreground">
+                  <Map className="h-3 w-3 mr-1" />
+                  Destination:
+                </p>
                 <p className="font-medium truncate max-w-[120px]" title={shipStatus.destinationPort}>{shipStatus.destinationPort}</p>
                 
-                <p className="text-muted-foreground">Load Date:</p>
+                <p className="flex items-center text-muted-foreground">
+                  <Package className="h-3 w-3 mr-1" />
+                  Load Date:
+                </p>
                 <p className="font-medium">{shipStatus.loadDate}</p>
                 
-                <p className="text-muted-foreground">ETA:</p>
+                <p className="flex items-center text-muted-foreground">
+                  <Calendar className="h-3 w-3 mr-1" />
+                  ETA:
+                </p>
                 <p className="font-medium">{shipStatus.eta}</p>
                 
-                <p className="text-muted-foreground">Current:</p>
+                <p className="flex items-center text-muted-foreground">
+                  <Map className="h-3 w-3 mr-1" />
+                  Current:
+                </p>
                 <p className="font-medium truncate max-w-[120px]" title={shipStatus.location}>{shipStatus.location}</p>
               </div>
             </div>
