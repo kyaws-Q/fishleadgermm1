@@ -111,8 +111,13 @@ export async function getShipmentDetails(id: string | number): Promise<ShipmentW
       return sum + entry.total_usd;
     }, 0);
 
-    // Extract buyer data safely with fallbacks
-    const buyerData = shipmentData.buyer || {};
+    // Extract buyer data safely with typed fallbacks
+    const buyerData = shipmentData.buyer as Buyer || {
+      id: "unknown",
+      name: "Unknown Buyer",
+      address: "",
+      created_at: new Date().toISOString()
+    };
     
     const shipmentWithDetails: ShipmentWithDetails = {
       shipment: {
@@ -126,7 +131,7 @@ export async function getShipmentDetails(id: string | number): Promise<ShipmentW
         created_at: shipmentData.created_at || new Date().toISOString()
       },
       buyer: {
-        id: buyerData.id?.toString() || "unknown",
+        id: buyerData.id || "unknown",
         name: buyerData.name || "Unknown Buyer",
         address: buyerData.address || "",
         created_at: buyerData.created_at || new Date().toISOString()

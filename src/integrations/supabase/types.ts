@@ -12,76 +12,129 @@ export type Database = {
       buyers: {
         Row: {
           address: string | null
+          company: string | null
           created_at: string | null
+          email: string | null
           id: string
-          name: string | null
-          user_id: string | null
+          name: string
+          user_id: string
         }
         Insert: {
           address?: string | null
+          company?: string | null
           created_at?: string | null
+          email?: string | null
           id?: string
-          name?: string | null
-          user_id?: string | null
+          name: string
+          user_id: string
         }
         Update: {
           address?: string | null
+          company?: string | null
           created_at?: string | null
+          email?: string | null
           id?: string
-          name?: string | null
-          user_id?: string | null
+          name?: string
+          user_id?: string
         }
         Relationships: []
       }
-      "Fish Entries": {
+      fish_entries: {
         Row: {
-          created_at: string
-          id: number
+          created_at: string | null
+          description: string | null
+          fish_name: string | null
+          id: string
+          net_kg_per_mc: number | null
+          price_per_kg: number | null
+          qty_kgs: number | null
+          qty_mc: number | null
+          shipment_id: string | null
+          total_usd: number | null
         }
         Insert: {
-          created_at?: string
-          id?: number
+          created_at?: string | null
+          description?: string | null
+          fish_name?: string | null
+          id?: string
+          net_kg_per_mc?: number | null
+          price_per_kg?: number | null
+          qty_kgs?: number | null
+          qty_mc?: number | null
+          shipment_id?: string | null
+          total_usd?: number | null
         }
         Update: {
-          created_at?: string
-          id?: number
+          created_at?: string | null
+          description?: string | null
+          fish_name?: string | null
+          id?: string
+          net_kg_per_mc?: number | null
+          price_per_kg?: number | null
+          qty_kgs?: number | null
+          qty_mc?: number | null
+          shipment_id?: string | null
+          total_usd?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fish_entries_shipment_id_fkey"
+            columns: ["shipment_id"]
+            isOneToOne: false
+            referencedRelation: "shipments"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       shipments: {
         Row: {
-          buyer_id: number
+          buyer_id: string
           created_at: string | null
-          id: number
+          id: string
           shipment_date: string
-          status: string
-          tracking_number: string | null
+          user_id: string
         }
         Insert: {
-          buyer_id: number
+          buyer_id: string
           created_at?: string | null
-          id?: never
+          id?: string
           shipment_date: string
-          status: string
-          tracking_number?: string | null
+          user_id: string
         }
         Update: {
-          buyer_id?: number
+          buyer_id?: string
           created_at?: string | null
-          id?: never
+          id?: string
           shipment_date?: string
-          status?: string
-          tracking_number?: string | null
+          user_id?: string
         }
         Relationships: [
           {
             foreignKeyName: "shipments_buyer_id_fkey"
             columns: ["buyer_id"]
             isOneToOne: false
-            referencedRelation: "shipments"
+            referencedRelation: "buyers"
             referencedColumns: ["id"]
           },
         ]
+      }
+      user_profiles: {
+        Row: {
+          company_name: string | null
+          created_at: string | null
+          id: string
+        }
+        Insert: {
+          company_name?: string | null
+          created_at?: string | null
+          id: string
+        }
+        Update: {
+          company_name?: string | null
+          created_at?: string | null
+          id?: string
+        }
+        Relationships: []
       }
     }
     Views: {
