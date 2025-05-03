@@ -10,82 +10,105 @@ export const exportPurchasesToExcel = async (purchases: FishPurchase[], companyN
   const workbook = new ExcelJS.Workbook();
   const sheet = workbook.addWorksheet('Purchases');
 
+  // Configure for A4 paper size
+  sheet.pageSetup = {
+    paperSize: 9, // A4
+    orientation: 'portrait',
+    margins: {
+      left: 0.4,
+      right: 0.4,
+      top: 0.4,
+      bottom: 0.4,
+      header: 0.2,
+      footer: 0.2,
+    }
+  };
+
+  // Set fixed width columns that match A4 printable area
+  sheet.columns = [
+    { header: 'ID', key: 'id', width: 10 },
+    { header: 'Company Name', key: 'companyName', width: 15 },
+    { header: 'Buyer Name', key: 'buyerName', width: 15 },
+    { header: 'Date', key: 'date', width: 12 },
+    { header: 'Fish Name', key: 'fishName', width: 15 },
+    { header: 'Size', key: 'size', width: 8 },
+    { header: 'Quantity', key: 'quantity', width: 10 },
+    { header: 'Price per Unit', key: 'pricePerUnit', width: 12 },
+    { header: 'Total', key: 'total', width: 10 },
+  ];
+
   // Add headers
-  sheet.addRow([
+  const headerRow = sheet.addRow([
     'ID',
     'Company Name',
     'Buyer Name',
     'Date',
     'Fish Name',
-    'Size (kg)',
+    'Size',
     'Quantity',
     'Price per Unit',
     'Total',
   ]);
 
-  // Add data rows
+  // Style header row
+  headerRow.eachCell((cell) => {
+    cell.font = { bold: true, size: 11 };
+    cell.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'E0E0E0' }
+    };
+    cell.border = {
+      top: { style: 'thin' },
+      left: { style: 'thin' },
+      bottom: { style: 'thin' },
+      right: { style: 'thin' }
+    };
+  });
+
+  // Add data rows with "up" format for size
   purchases.forEach((purchase) => {
-    sheet.addRow([
+    // Convert numeric size to "up" format
+    const sizeValue = typeof purchase.sizeKg === 'number' ? 
+      `${purchase.sizeKg} up` : 
+      purchase.sizeKg;
+    
+    const row = sheet.addRow([
       purchase.id,
       purchase.companyName,
       purchase.buyerName,
       purchase.date,
       purchase.fishName,
-      purchase.sizeKg,
+      sizeValue,
       purchase.quantity,
       purchase.pricePerUnit,
       purchase.total,
     ]);
-  });
-
-  // Format as table
-  sheet.addTable({
-    name: 'PurchasesTable',
-    ref: 'A1',
-    headerRow: true,
-    totalsRow: false,
-    style: {
-      theme: 'TableStyleMedium2',
-      showRowStripes: true,
-    },
-    columns: [
-      { name: 'ID', filterButton: true },
-      { name: 'Company Name', filterButton: true },
-      { name: 'Buyer Name', filterButton: true },
-      { name: 'Date', filterButton: true },
-      { name: 'Fish Name', filterButton: true },
-      { name: 'Size (kg)', filterButton: true },
-      { name: 'Quantity', filterButton: true },
-      { name: 'Price per Unit', filterButton: true },
-      { name: 'Total', filterButton: true },
-    ],
-    rows: purchases.map((purchase) => [
-      purchase.id,
-      purchase.companyName,
-      purchase.buyerName,
-      purchase.date,
-      purchase.fishName,
-      purchase.sizeKg,
-      purchase.quantity,
-      purchase.pricePerUnit,
-      purchase.total,
-    ]),
-  });
-
-  // Auto-size columns
-  sheet.columns.forEach((column) => {
-    const excelColumn = column as ExcelJS.Column;
-    excelColumn.width = 15;
+    
+    // Add border to each cell
+    row.eachCell((cell) => {
+      cell.border = {
+        top: { style: 'thin' },
+        left: { style: 'thin' },
+        bottom: { style: 'thin' },
+        right: { style: 'thin' }
+      };
+    });
   });
 
   try {
+    toast.loading("Preparing Excel export...");
+    
     // Generate Excel file
     const buffer = await workbook.xlsx.writeBuffer();
     const fileDate = format(new Date(), 'yyyyMMdd_HHmmss');
     saveAs(new Blob([buffer]), `${companyName}_purchases_${fileDate}.xlsx`);
+    
+    toast.dismiss();
     toast.success("Excel file downloaded successfully");
   } catch (error) {
     console.error("Error generating Excel file:", error);
+    toast.dismiss();
     toast.error("Failed to generate Excel file");
   }
 };
@@ -116,7 +139,7 @@ export const exportShipmentToExcel = async (shipment: ShipmentWithEntries) => {
       { header: 'Item', key: 'item', width: 8 },
       { header: 'Fish Type', key: 'fish', width: 18 },
       { header: 'Quantity', key: 'quantity', width: 10 },
-      { header: 'Size (kg)', key: 'size', width: 10 },
+      { header: 'Size', key: 'size', width: 10 },
       { header: 'Price per Unit', key: 'price', width: 14 },
       { header: 'Total', key: 'total', width: 14 },
     ];
@@ -152,7 +175,7 @@ export const exportShipmentToExcel = async (shipment: ShipmentWithEntries) => {
     sheet.addRow([]).height = 10;
     
     // Add column headers with styling
-    const headerRow = sheet.addRow(['Item', 'Fish Type', 'Quantity', 'Size (kg)', 'Price per Unit', 'Total']);
+    const headerRow = sheet.addRow(['Item', 'Fish Type', 'Quantity', 'Size (up)', 'Price per Unit', 'Total']);
     headerRow.eachCell((cell) => {
       cell.font = { bold: true, size: 11 };
       cell.fill = {
@@ -168,14 +191,17 @@ export const exportShipmentToExcel = async (shipment: ShipmentWithEntries) => {
       };
     });
     
-    // Add items
+    // Add items - convert fish size to "up" format
     if (shipment.entries && shipment.entries.length > 0) {
       shipment.entries.forEach((entry, index) => {
+        // Convert size to "up" format
+        const sizeFormatted = `${entry.netKgPerMc} up`;
+        
         const row = sheet.addRow([
           index + 1,
           entry.fishName,
           entry.qtyMc,
-          entry.netKgPerMc,
+          sizeFormatted,
           entry.pricePerKg.toFixed(2),
           (entry.qtyMc * entry.netKgPerMc * entry.pricePerKg).toFixed(2)
         ]);
@@ -223,9 +249,11 @@ export const exportShipmentToExcel = async (shipment: ShipmentWithEntries) => {
     const buffer = await workbook.xlsx.writeBuffer();
     const fileDate = format(new Date(), 'yyyyMMdd_HHmmss');
     saveAs(new Blob([buffer]), `shipment_${fileDate}.xlsx`);
+    toast.dismiss();
     toast.success("Excel file downloaded successfully");
   } catch (error) {
     console.error("Error exporting to Excel:", error);
+    toast.dismiss();
     toast.error("Failed to export to Excel");
   }
 };

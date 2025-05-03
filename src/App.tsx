@@ -10,6 +10,7 @@ import AnalyticsPage from "@/pages/AnalyticsPage";
 import SettingsPage from "@/pages/SettingsPage";
 import ExportPage from "@/pages/ExportPage";
 import ShipmentsPage from "@/pages/ShipmentsPage";
+import TrackerPage from "@/pages/TrackerPage";
 import NotFound from "@/pages/NotFound";
 
 import "./App.css";
@@ -35,6 +36,7 @@ function AppContent() {
         <Route path="/shipments" element={<ShipmentsPage />} />
         <Route path="/analytics" element={<AnalyticsPage />} />
         <Route path="/export" element={<ExportPage />} />
+        <Route path="/tracker" element={<TrackerPage />} />
         <Route path="/settings" element={<SettingsPage />} />
         <Route path="*" element={<NotFound />} />
       </Routes>

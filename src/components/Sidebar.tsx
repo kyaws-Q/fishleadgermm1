@@ -11,6 +11,7 @@ import {
   Settings,
   LogOut,
   Ship,
+  Map
 } from "lucide-react";
 import { ShipTrackingInfo } from "./ShipTrackingInfo";
 
@@ -55,6 +56,11 @@ export function Sidebar() {
       name: "Export",
       href: "/export",
       icon: FileDown,
+    },
+    {
+      name: "Tracker",
+      href: "/tracker",
+      icon: Map,
     },
     {
       name: "Settings",

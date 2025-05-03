@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Ship, Anchor, Map, Calendar, CircleAlert, Search, Globe, Navigation, Package } from "lucide-react";
 import { toast } from "sonner";
+import { Link } from "react-router-dom";
 
 interface ShipStatus {
   name: string;
@@ -17,6 +18,7 @@ interface ShipStatus {
   destinationPort: string;
   vessel: string;
   loadDate: string;
+  imo?: string;
 }
 
 export function ShipTrackingInfo() {
@@ -43,7 +45,8 @@ export function ShipTrackingInfo() {
         originPort: "Yangon Port, Myanmar",
         destinationPort: "Jeddah Islamic Port, Saudi Arabia",
         vessel: "MSC VIVIANA",
-        loadDate: "April 15, 2025"
+        loadDate: "April 15, 2025",
+        imo: shipTrackingId.startsWith("IMO") ? shipTrackingId : `IMO${Math.floor(Math.random() * 1000000) + 9000000}`
       };
       
       setShipStatus(mockShipData);
@@ -66,7 +69,7 @@ export function ShipTrackingInfo() {
           <Input 
             value={shipTrackingId}
             onChange={(e) => setShipTrackingId(e.target.value)}
-            placeholder="Enter ship/container ID"
+            placeholder="IMO or container ID"
             className="h-8 text-xs"
           />
           <Button 
@@ -148,6 +151,14 @@ export function ShipTrackingInfo() {
                 </p>
                 <p className="font-medium truncate max-w-[120px]" title={shipStatus.location}>{shipStatus.location}</p>
               </div>
+            </div>
+
+            <div className="text-center mt-3">
+              <Link to="/tracker">
+                <Button variant="link" size="sm" className="p-0 h-auto text-xs text-primary">
+                  View detailed tracking
+                </Button>
+              </Link>
             </div>
           </div>
         )}
