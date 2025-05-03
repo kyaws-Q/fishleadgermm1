@@ -21,7 +21,10 @@ export const exportPurchasesToExcel = async (purchases: FishPurchase[], companyN
       bottom: 0.4,
       header: 0.2,
       footer: 0.2,
-    }
+    },
+    fitToPage: true,
+    fitToWidth: 1,
+    fitToHeight: 0
   };
 
   // Set fixed width columns that match A4 printable area
@@ -64,6 +67,7 @@ export const exportPurchasesToExcel = async (purchases: FishPurchase[], companyN
       bottom: { style: 'thin' },
       right: { style: 'thin' }
     };
+    cell.alignment = { horizontal: 'center', vertical: 'middle' };
   });
 
   // Add data rows with "up" format for size
@@ -85,8 +89,22 @@ export const exportPurchasesToExcel = async (purchases: FishPurchase[], companyN
       purchase.total,
     ]);
     
-    // Add border to each cell
-    row.eachCell((cell) => {
+    // Set alignment for each cell
+    row.eachCell((cell, colNumber) => {
+      // Set alignment based on column content type
+      if (colNumber === 1) { // ID
+        cell.alignment = { horizontal: 'center' };
+      } else if ([2, 3, 5].includes(colNumber)) { // Company, Buyer, Fish - text columns
+        cell.alignment = { horizontal: 'left' };
+      } else if (colNumber === 4) { // Date
+        cell.alignment = { horizontal: 'center' };
+      } else if (colNumber === 6) { // Size
+        cell.alignment = { horizontal: 'center' };
+      } else { // Quantity, Price, Total - numeric columns
+        cell.alignment = { horizontal: 'right' };
+      }
+      
+      // Add border to each cell
       cell.border = {
         top: { style: 'thin' },
         left: { style: 'thin' },
@@ -131,7 +149,10 @@ export const exportShipmentToExcel = async (shipment: ShipmentWithEntries) => {
         bottom: 0.4,
         header: 0.2,
         footer: 0.2,
-      }
+      },
+      fitToPage: true,
+      fitToWidth: 1,
+      fitToHeight: 0
     };
     
     // Set fixed width columns that match A4 printable area
@@ -189,6 +210,7 @@ export const exportShipmentToExcel = async (shipment: ShipmentWithEntries) => {
         bottom: { style: 'thin' },
         right: { style: 'thin' }
       };
+      cell.alignment = { horizontal: 'center', vertical: 'middle' };
     });
     
     // Add items - convert fish size to "up" format
@@ -206,8 +228,19 @@ export const exportShipmentToExcel = async (shipment: ShipmentWithEntries) => {
           (entry.qtyMc * entry.netKgPerMc * entry.pricePerKg).toFixed(2)
         ]);
         
-        // Add border to each cell
-        row.eachCell((cell) => {
+        // Set alignment for each cell
+        row.eachCell((cell, colNumber) => {
+          if (colNumber === 1) { // Item number
+            cell.alignment = { horizontal: 'center' };
+          } else if (colNumber === 2) { // Fish type
+            cell.alignment = { horizontal: 'left' };
+          } else if ([3, 4].includes(colNumber)) { // Quantity, Size
+            cell.alignment = { horizontal: 'center' };
+          } else { // Price, Total
+            cell.alignment = { horizontal: 'right' };
+          }
+          
+          // Add border to each cell
           cell.border = {
             top: { style: 'thin' },
             left: { style: 'thin' },
@@ -231,6 +264,8 @@ export const exportShipmentToExcel = async (shipment: ShipmentWithEntries) => {
         totalAmount.toFixed(2)
       ]);
       totalRow.font = { bold: true };
+      totalRow.getCell(5).alignment = { horizontal: 'right' };
+      totalRow.getCell(6).alignment = { horizontal: 'right' };
       totalRow.eachCell((cell, colNumber) => {
         if (colNumber > 4) {
           cell.border = {
