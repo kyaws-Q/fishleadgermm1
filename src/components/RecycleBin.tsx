@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useApp } from '@/contexts/AppContext';
+import { FishPurchase } from '@/types/purchase';
 import {
   Card,
   CardContent,
@@ -26,7 +27,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 export function RecycleBin() {
   const { deletedPurchases, fetchDeletedPurchases, recoverPurchaseGroup } = useApp();
   const [isLoading, setIsLoading] = useState(false);
-  const [groupedDeletedPurchases, setGroupedDeletedPurchases] = useState<Record<string, any>>({});
+  const [groupedDeletedPurchases, setGroupedDeletedPurchases] = useState<Record<string, FishPurchase[]>>({});
 
   // Batch selection state
   const [selectedGroups, setSelectedGroups] = useState<string[]>([]);
@@ -35,13 +36,13 @@ export function RecycleBin() {
   // Load deleted purchases when component mounts
   useEffect(() => {
     loadDeletedPurchases();
-  }, []);
+  }, [loadDeletedPurchases]);
 
   // Group deleted purchases by company, date, and buyer
   useEffect(() => {
     if (!deletedPurchases?.length) return;
 
-    const grouped = deletedPurchases.reduce((acc: Record<string, any[]>, purchase) => {
+    const grouped = deletedPurchases.reduce((acc: Record<string, FishPurchase[]>, purchase) => {
       const key = `${purchase.companyName}-${purchase.purchaseDate}-${purchase.buyerName}`;
       if (!acc[key]) {
         acc[key] = [];
@@ -53,7 +54,7 @@ export function RecycleBin() {
     setGroupedDeletedPurchases(grouped);
   }, [deletedPurchases]);
 
-  const loadDeletedPurchases = async () => {
+  const loadDeletedPurchases = useCallback(async () => {
     setIsLoading(true);
     try {
       await fetchDeletedPurchases?.();
@@ -63,7 +64,7 @@ export function RecycleBin() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [fetchDeletedPurchases, setIsLoading]);
 
   // Handle select all groups
   const handleSelectAllGroups = () => {
@@ -171,7 +172,7 @@ export function RecycleBin() {
     setSelectAll(false);
 
     // Process groups sequentially using promises
-    const processNextGroup = (index) => {
+    const processNextGroup = (index: number) => {
       if (index >= groupsToRecover.length) {
         // All groups processed
         toast.dismiss(loadingToastId);
@@ -211,7 +212,7 @@ export function RecycleBin() {
     processNextGroup(0);
   };
 
-  const calculateGroupTotal = (purchases: any[]) => {
+  const calculateGroupTotal = (purchases: FishPurchase[]) => {
     return purchases.reduce((total, purchase) => total + purchase.totalPrice, 0);
   };
 

@@ -1,11 +1,67 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode, useMemo, useCallback } from "react";
 import { AppTheme, FishPurchase, TableStyle, AppContextProps, TimeFrame, DateRange, ChartDataPoint, PurchaseGroup } from "@/types";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, checkSupabaseConnection } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { startOfMonth, endOfMonth, format, parseISO, isWithinInterval } from "date-fns";
+import { startOfMonth, endOfMonth, format, parseISO, isWithinInterval, subDays, subMonths } from "date-fns";
 import { purchaseService } from "@/services/purchaseService";
+import { useNavigate } from 'react-router-dom';
 
 const AppContext = createContext<AppContextProps | undefined>(undefined);
+
+// Sample purchase data for offline mode
+const samplePurchases = [
+  {
+    id: 'sample-1',
+    fishName: 'Salmon',
+    sizeKg: 5,
+    quantity: 10,
+    pricePerUnit: 20,
+    total: 200,
+    totalPrice: 200,
+    companyName: 'Ocean Fresh',
+    buyerName: 'John Doe',
+    date: new Date().toISOString(),
+    purchaseDate: new Date().toISOString(),
+    paymentStatus: 'paid' as const,
+    userId: 'demo-user-id',
+    notes: 'Fresh catch from Norway',
+    lastUpdated: new Date().toISOString()
+  },
+  {
+    id: 'sample-2',
+    fishName: 'Tuna',
+    sizeKg: 8,
+    quantity: 5,
+    pricePerUnit: 30,
+    total: 150,
+    totalPrice: 150,
+    companyName: 'Sea Delights',
+    buyerName: 'Jane Smith',
+    date: new Date(Date.now() - 86400000 * 2).toISOString(),
+    purchaseDate: new Date(Date.now() - 86400000 * 2).toISOString(),
+    paymentStatus: 'pending' as const,
+    userId: 'demo-user-id',
+    notes: 'Premium quality',
+    lastUpdated: new Date().toISOString()
+  },
+  {
+    id: 'sample-3',
+    fishName: 'Cod',
+    sizeKg: 3,
+    quantity: 15,
+    pricePerUnit: 15,
+    total: 225,
+    totalPrice: 225,
+    companyName: 'Ocean Fresh',
+    buyerName: 'John Doe',
+    date: new Date(Date.now() - 86400000 * 5).toISOString(),
+    purchaseDate: new Date(Date.now() - 86400000 * 5).toISOString(),
+    paymentStatus: 'unpaid' as const,
+    userId: 'demo-user-id',
+    notes: 'From Atlantic waters',
+    lastUpdated: new Date().toISOString()
+  }
+];
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<{ id: string; email: string; name?: string; profileUrl?: string } | null>(null);
@@ -80,10 +136,27 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   // Fetch user currency from Supabase on login
   const fetchUserCurrency = async () => {
-    if (!user || !user.id) return;
+    if (!user || !user.id) {
+      console.log('fetchUserCurrency: No user logged in');
+      return;
+    }
+    
     try {
-      // Use maybeSingle() instead of single() to handle cases where there might be no rows
-      // or we can use .limit(1) to get at most one row instead of expecting exactly one
+      console.log('Fetching currency for user:', user.id);
+      
+      // First check if the users table and currency column exist
+      const { data: tableData, error: tableError } = await supabase
+        .from('users')
+        .select('id')
+        .limit(1);
+        
+      if (tableError) {
+        console.warn('Users table check error:', tableError.message);
+        // Table might not exist, create it
+        await createUserTableIfNeeded();
+      }
+      
+      // Now try to get the currency
       const { data, error } = await supabase
         .from('users')
         .select('currency')
@@ -96,61 +169,155 @@ export function AppProvider({ children }: { children: ReactNode }) {
         return;
       }
       
+      console.log('Currency fetch result:', data);
+      
       // Check if we got any results and use the first one
       if (data && data.length > 0 && data[0].currency) {
         setCurrencyState(data[0].currency);
+        console.log('Set currency to:', data[0].currency);
+      } else {
+        // No currency set for this user, create a default entry
+        await setDefaultUserCurrency();
       }
     } catch (err) {
       console.error('Exception in fetchUserCurrency:', err);
       // Ignore error, fallback to default
     }
   };
-
-  useEffect(() => {
-    // Set up auth state listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log("Auth state changed:", event, session);
-      if (session) {
-        setUser({
-          id: session.user.id,
-          email: session.user.email || '',
-          name: session.user.user_metadata?.name || session.user.user_metadata?.full_name,
-          profileUrl: session.user.user_metadata?.avatar_url || session.user.user_metadata?.picture
-        });
-      } else {
-        setUser(null);
-        // Clear purchases when user logs out
-        setPurchases([]);
-        setDeletedPurchases([]);
+  
+  // Helper function to create the users table if it doesn't exist
+  const createUserTableIfNeeded = async () => {
+    try {
+      // This is a simplified approach - in a real app, you'd use migrations
+      // Check if we can insert a row with the current user
+      if (user && user.id) {
+        const { error } = await supabase
+          .from('users')
+          .upsert({ id: user.id, currency: 'USD' })
+          .select();
+          
+        if (error) {
+          console.error('Error creating user entry:', error);
+        } else {
+          console.log('Created default user entry');
+          setCurrencyState('USD');
+        }
       }
-      setIsLoading(false);
-    });
+    } catch (err) {
+      console.error('Error in createUserTableIfNeeded:', err);
+    }
+  };
+  
+  // Set a default currency for the user
+  const setDefaultUserCurrency = async () => {
+    try {
+      if (user && user.id) {
+        const { error } = await supabase
+          .from('users')
+          .upsert({ id: user.id, currency: 'USD' })
+          .select();
+          
+        if (error) {
+          console.error('Error setting default currency:', error);
+        } else {
+          console.log('Set default currency to USD');
+          setCurrencyState('USD');
+        }
+      }
+    } catch (err) {
+      console.error('Error in setDefaultUserCurrency:', err);
+    }
+  };
 
-    // Check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      console.log("Initial session check:", session);
-      if (session) {
-        setUser({
-          id: session.user.id,
-          email: session.user.email || '',
-          name: session.user.user_metadata?.name || session.user.user_metadata?.full_name,
-          profileUrl: session.user.user_metadata?.avatar_url || session.user.user_metadata?.picture
+  // Initialize auth and check connection
+  useEffect(() => {
+    let authSubscription: { unsubscribe: () => void } | undefined;
+    
+    const initializeAuth = async () => {
+      try {
+        // First check if Supabase is accessible
+        const isConnected = await checkSupabaseConnection();
+        if (!isConnected) {
+          console.error('Supabase connection failed - check network or credentials');
+          toast.error('Database connection failed. Check your internet connection.');
+          setIsLoading(false);
+          return;
+        }
+        
+        console.log('Supabase connection successful, proceeding with auth');
+        
+        // Set up auth state listener
+        const { data } = supabase.auth.onAuthStateChange((event, session) => {
+          console.log("Auth state changed:", event, session);
+          if (session) {
+            setUser({
+              id: session.user.id,
+              email: session.user.email || '',
+              name: session.user.user_metadata?.name || session.user.user_metadata?.full_name,
+              profileUrl: session.user.user_metadata?.avatar_url || session.user.user_metadata?.picture
+            });
+          } else {
+            setUser(null);
+            // Clear purchases when user logs out
+            setPurchases([]);
+            setDeletedPurchases([]);
+          }
+          setIsLoading(false);
         });
         
-        // Force fetch data on mount
-        setTimeout(() => {
-          if (session.user.id) {
-            console.log("Force fetching data for user:", session.user.id);
-            fetchUserPurchases();
-            fetchDeletedPurchases();
-          }
-        }, 1000);
+        // Store subscription for cleanup
+        authSubscription = data.subscription;
+        
+        // Check for existing session
+        const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+        console.log("Initial session check:", sessionData?.session, sessionError);
+        
+        if (sessionError) {
+          console.error('Session check error:', sessionError);
+          toast.error('Authentication error. Please try logging in again.');
+          setIsLoading(false);
+          return;
+        }
+        
+        if (sessionData?.session) {
+          setUser({
+            id: sessionData.session.user.id,
+            email: sessionData.session.user.email || '',
+            name: sessionData.session.user.user_metadata?.name || sessionData.session.user.user_metadata?.full_name,
+            profileUrl: sessionData.session.user.user_metadata?.avatar_url || sessionData.session.user.user_metadata?.picture
+          });
+          
+          // Force fetch data on mount
+          setTimeout(() => {
+            if (sessionData.session?.user.id) {
+              console.log("Force fetching data for user:", sessionData.session.user.id);
+              fetchUserPurchases();
+              fetchDeletedPurchases();
+              fetchUserCurrency();
+            }
+          }, 1000);
+        } else {
+          // No session found
+          console.log('No active session found');
+        }
+        
+        setIsLoading(false);
+        
+      } catch (err) {
+        console.error('Auth initialization error:', err);
+        toast.error('Authentication error. Please try logging in again.');
+        setIsLoading(false);
       }
-      setIsLoading(false);
-    });
-
+    };
+    
+    // Start the auth initialization process
+    initializeAuth();
+    
+    // Cleanup function
     return () => {
-      subscription.unsubscribe();
+      if (authSubscription) {
+        authSubscription.unsubscribe();
+      }
     };
   }, []);
 
@@ -312,15 +479,86 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const login = async (email: string, password: string): Promise<void> => {
     setIsLoading(true);
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      // First check connection to Supabase
+      console.log('Checking Supabase connection before login...');
+      const isConnected = await checkSupabaseConnection();
+      console.log('Connection check result:', isConnected);
+      if (!isConnected) {
+        toast.error('Database connection failed. Check your internet connection.');
+        setIsLoading(false);
+        return;
+      }
+      
+      console.log('Attempting login with email:', email);
+      try {
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Login error:', error);
+        throw error;
+      }
+
+      console.log('Login successful, session:', data?.session);
+      
+      // Force a refresh of user data
+      if (data?.session) {
+        setUser({
+          id: data.session.user.id,
+          email: data.session.user.email || '',
+          name: data.session.user.user_metadata?.name || data.session.user.user_metadata?.full_name,
+          profileUrl: data.session.user.user_metadata?.avatar_url || data.session.user.user_metadata?.picture
+        });
+        
+        // Immediately fetch user data
+        setTimeout(() => {
+          fetchUserPurchases();
+          fetchDeletedPurchases();
+          fetchUserCurrency();
+        }, 500);
+        }
+      } catch (loginErr) {
+        // Check if this is a network error
+        console.error('Login fetch error:', loginErr);
+        
+        if (loginErr instanceof Error && 
+            (loginErr.message.includes('Failed to fetch') || 
+             loginErr.message.includes('Network Error') ||
+             loginErr.message.includes('ERR_NAME_NOT_RESOLVED') ||
+             loginErr.toString().includes('TypeError'))) {
+          
+          console.log('Network error during login - activating demo mode');
+          toast.info('Network connection error. Using demo mode.', {
+            duration: 5000,
+            description: 'You can still explore the app with sample data.'
+          });
+          
+          // Set a demo user for offline testing
+          setUser({
+            id: 'demo-user-id',
+            email: email || 'demo@example.com',
+            name: 'Demo User',
+            profileUrl: null
+          });
+          
+          // Load sample data
+          setPurchases(samplePurchases);
+          setDeletedPurchases([]);
+          setCurrencyState('USD');
+          setLastUpdated(new Date());
+          setIsLoading(false);
+          return;
+        }
+        
+        // If it's another type of error, rethrow it
+        throw loginErr;
+      }
 
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Login failed");
+      console.error('Login exception:', error);
+      toast.error(error instanceof Error ? error.message : "Login failed. Please check your internet connection.");
       setIsLoading(false);
       throw error;
     }

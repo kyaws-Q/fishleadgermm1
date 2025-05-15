@@ -17,31 +17,16 @@ export function ExportButtons({ dateFilter }: ExportButtonsProps = {}) {
     // Make a copy to avoid modifying the original
     let dataToExport = [...purchases]; 
     
-    // Log original data for debugging
-    console.log(`EXPORT DEBUG | Filter: ${dateFilter} | Total records: ${dataToExport.length}`);
-    
     // Apply date filtering if it's not 'all'
     if (dateFilter && dateFilter !== 'all') {
       const today = new Date();
       const todayStr = formatDateString(today);
-      
-      console.log("Today's date (YYYY-MM-DD):", todayStr);
-      
-      // Debug first few items
-      if (dataToExport.length > 0) {
-        dataToExport.slice(0, 3).forEach(p => {
-          console.log(`Item date: ${p.purchaseDate || p.date}, formatted: ${formatDateString(new Date(p.purchaseDate || p.date))}`);
-        });
-      }
       
       if (dateFilter === 'today') {
         dataToExport = dataToExport.filter(p => {
           // Get purchase date and format it consistently
           const purchaseDateObj = new Date(p.purchaseDate || p.date);
           const purchaseDateStr = formatDateString(purchaseDateObj);
-          
-          // Log for debugging
-          console.log(`Comparing ${purchaseDateStr} === ${todayStr} | Result: ${purchaseDateStr === todayStr}`);
           
           // Keep only if it's today
           return purchaseDateStr === todayStr;
@@ -63,8 +48,6 @@ export function ExportButtons({ dateFilter }: ExportButtonsProps = {}) {
           return purchaseDate >= monthAgo && purchaseDate <= today;
         });
       }
-      
-      console.log(`After filtering: ${dataToExport.length} records`);
     }
     
     if (dataToExport.length === 0) {
@@ -74,7 +57,6 @@ export function ExportButtons({ dateFilter }: ExportButtonsProps = {}) {
     
     // Start export process
     const loadingToastId = toast.loading(`Preparing ${format.toUpperCase()} export...`);
-    console.log(`Exporting ${dataToExport.length} records in ${format} format`);
     
     setTimeout(() => {
       switch (format) {

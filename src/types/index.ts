@@ -120,6 +120,7 @@ export interface AppContextProps {
   login?: (email: string, password: string) => Promise<void>;
   signup?: (email: string, password: string, name?: string) => Promise<void>;
   logout?: () => Promise<void>;
+  forgotPassword?: (email: string) => Promise<void>;
   updateProfile?: (name: string, email: string) => Promise<void>;
   isLoading?: boolean;
 

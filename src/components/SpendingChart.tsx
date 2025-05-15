@@ -6,7 +6,7 @@ import {
   CartesianGrid, Tooltip, Legend, Line, Area, Pie, ResponsiveContainer
 } from 'recharts';
 import { cn } from "@/lib/utils";
-import { useWebSocket } from "@/contexts/WebSocketProvider";
+import { useWebSocket } from "@/contexts/WebSocketContext";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BarChart3, LineChart as LineChartIcon, PieChart as PieChartIcon, AlertCircle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";

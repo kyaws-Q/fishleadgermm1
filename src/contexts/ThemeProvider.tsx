@@ -1,16 +1,6 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { AppTheme } from '@/types';
-
-type ThemeContextType = {
-  theme: AppTheme;
-  setTheme: (theme: AppTheme) => void;
-  isDarkMode: boolean;
-  toggleDarkMode: () => void;
-  systemTheme: 'light' | 'dark';
-  useSystemTheme: () => void;
-};
-
-const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
+import { ThemeContext, ThemeContextType } from './ThemeContext';
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   // Initialize theme from localStorage or default to light
@@ -143,10 +133,4 @@ function applyThemeToDocument(theme: AppTheme) {
   }
 }
 
-export function useTheme() {
-  const context = useContext(ThemeContext);
-  if (context === undefined) {
-    throw new Error('useTheme must be used within a ThemeProvider');
-  }
-  return context;
-}
+// useTheme hook is now in a separate file at @/hooks/use-theme.ts

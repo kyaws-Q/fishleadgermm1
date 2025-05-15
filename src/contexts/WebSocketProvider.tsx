@@ -1,19 +1,12 @@
-import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { useApp } from './AppContext';
+import React, { useContext, useEffect, useState, ReactNode } from 'react';
+import { useApp } from '@/contexts/AppContext';
 import { toast } from 'sonner';
-
-interface WebSocketContextType {
-  isConnected: boolean;
-  lastMessage: any | null;
-  sendMessage: (message: any) => void;
-}
-
-const WebSocketContext = createContext<WebSocketContextType | undefined>(undefined);
+import { WebSocketContext, WebSocketContextType, WebSocketMessage } from './WebSocketContext';
 
 export function WebSocketProvider({ children }: { children: ReactNode }) {
   const [socket, setSocket] = useState<WebSocket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
-  const [lastMessage, setLastMessage] = useState<any | null>(null);
+  const [lastMessage, setLastMessage] = useState<WebSocketMessage | null>(null);
   const { user, isRealTimeEnabled, setDateRange } = useApp();
 
   // Initialize WebSocket connection
@@ -82,7 +75,7 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
   }, [isRealTimeEnabled, user]);
 
   // Send a message through the WebSocket
-  const sendMessage = (message: any) => {
+  const sendMessage = (message: WebSocketMessage) => {
     if (socket && socket.readyState === WebSocket.OPEN) {
       socket.send(JSON.stringify(message));
     } else {
@@ -96,12 +89,4 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
       {children}
     </WebSocketContext.Provider>
   );
-}
-
-export function useWebSocket() {
-  const context = useContext(WebSocketContext);
-  if (context === undefined) {
-    throw new Error('useWebSocket must be used within a WebSocketProvider');
-  }
-  return context;
 }

@@ -116,7 +116,7 @@ export default function ExportPage() {
 
   // Debug whenever dateFilter changes
   useEffect(() => {
-    console.log("Date filter changed to:", dateFilter);
+    // console.log("Date filter changed to:", dateFilter);
   }, [dateFilter]);
 
   // Format date as YYYY-MM-DD for string comparison
@@ -141,13 +141,6 @@ export default function ExportPage() {
 
     // Format today's date as YYYY-MM-DD for comparison
     const todayStr = formatDateStr(today);
-    console.log("Today's date:", todayStr);
-
-    // Show a few purchase dates for debugging
-    console.log("FIRST FEW PURCHASE DATES:");
-    purchases.slice(0, 3).forEach(p => {
-      console.log(`ID: ${p.id}, Date: ${p.purchaseDate || p.date}, Formatted: ${formatDateStr(new Date(p.purchaseDate || p.date))}`);
-    });
 
     let filteredPurchases = [...purchases];
 
@@ -221,8 +214,6 @@ export default function ExportPage() {
       
       const sessions = groupPurchasesIntoSessions(filtered);
       setPurchaseSessions(sessions);
-      
-      console.log(`Filter changed to ${dateFilter}: Found ${filtered.length} records in ${sessions.length} entry sessions`);
     }
   }, [purchases, dateFilter, startDate, endDate, filterPurchasesByDate, groupPurchasesIntoSessions]);
 
@@ -361,36 +352,36 @@ export default function ExportPage() {
       titleCell.value = 'COMMERCIAL INVOICE';
       titleCell.font = { bold: true, size: 14 };
       titleCell.alignment = { horizontal: 'center' };
-      titleCell.border = { top: {style:'none'}, left: {style:'none'}, bottom: {style:'none'}, right: {style:'none'} };
+      titleCell.border = { top: {style: null}, left: {style: null}, bottom: {style: null}, right: {style: null} };
       
       // Add shipper info in the left corner (no borders)
       worksheet.getCell('A2').value = shipperInfo || 'AYAAN-YGN';
       worksheet.getCell('A2').font = { size: 10 };
-      worksheet.getCell('A2').border = { top: {style:'none'}, left: {style:'none'}, bottom: {style:'none'}, right: {style:'none'} };
+      worksheet.getCell('A2').border = { top: {style: null}, left: {style: null}, bottom: {style: null}, right: {style: null} };
       
       // Add destination-date (no borders)
       const today = shipmentDate || new Date();
       const formattedDate = `${today.getDate().toString().padStart(2, '0')}-${(today.getMonth() + 1).toString().padStart(2, '0')}-${today.getFullYear()}`;
       worksheet.getCell('C2').value = `1-YGN-${formattedDate}`;
       worksheet.getCell('C2').font = { size: 10 };
-      worksheet.getCell('C2').border = { top: {style:'none'}, left: {style:'none'}, bottom: {style:'none'}, right: {style:'none'} };
+      worksheet.getCell('C2').border = { top: {style: null}, left: {style: null}, bottom: {style: null}, right: {style: null} };
       
       // Add reference number (no borders) on right side
       worksheet.getCell('F2').value = '06-11/SUPNO-06-11-23';
       worksheet.getCell('F2').font = { size: 10 };
       worksheet.getCell('F2').alignment = { horizontal: 'right' };
-      worksheet.getCell('F2').border = { top: {style:'none'}, left: {style:'none'}, bottom: {style:'none'}, right: {style:'none'} };
+      worksheet.getCell('F2').border = { top: {style: null}, left: {style: null}, bottom: {style: null}, right: {style: null} };
       
       // Add PSC reference below the date
       worksheet.getCell('F3').value = referenceNumber || 'FSC-598364-7';
       worksheet.getCell('F3').font = { size: 10 };
       worksheet.getCell('F3').alignment = { horizontal: 'right' };
-      worksheet.getCell('F3').border = { top: {style:'none'}, left: {style:'none'}, bottom: {style:'none'}, right: {style:'none'} };
+      worksheet.getCell('F3').border = { top: {style: null}, left: {style: null}, bottom: {style: null}, right: {style: null} };
       
       // Add buyer info (no borders)
       worksheet.getCell('A3').value = `BUYER: ${session.buyerName || buyerName || 'ali ahmed'}`;
       worksheet.getCell('A3').font = { bold: true, size: 10 };
-      worksheet.getCell('A3').border = { top: {style:'none'}, left: {style:'none'}, bottom: {style:'none'}, right: {style:'none'} };
+      worksheet.getCell('A3').border = { top: {style: null}, left: {style: null}, bottom: {style: null}, right: {style: null} };
       
       // Add table headers with styling - Row 4
       const headerRow = worksheet.addRow(['NO', 'ITEM', 'DESCRIPTION', 'NET KG PER MC', 'QTY MC', 'QTY KGS', 'PRICE (KG)', 'TOTAL USD AMOUNT']);

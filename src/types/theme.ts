@@ -2,7 +2,7 @@
  * Theme and styling types
  */
 
-export type AppTheme = 'light' | 'dark' | 'blue' | 'green';
+export type AppTheme = 'light' | 'dark' | 'blue' | 'green' | 'system';
 
 export type TableStyle = 'default' | 'bordered' | 'striped' | 'compact' | 'modern' | 'excel';
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,7 +9,10 @@ import { differenceInDays, format } from "date-fns";
 import { toast } from "sonner";
 import { PREDEFINED_ROUTES } from '@/data/routes';
 import { ThemeSwitcher } from '@/components/ThemeSwitcher';
-import { useTheme } from '@/contexts/ThemeProvider';
+import { useApp } from "@/contexts/AppContext";
+import Map from "@/components/Map";
+import { supabase } from "@/integrations/supabase/client";
+import { useTheme } from '@/hooks/use-theme';
 
 interface VesselPosition {
   mmsi: string;

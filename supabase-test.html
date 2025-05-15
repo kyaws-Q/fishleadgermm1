@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Supabase Connection Test</title>
+</head>
+<body>
+  <h1>Supabase Connection Test</h1>
+  <button id="testBtn">Test Connection</button>
+  <div id="result"></div>
+
+  <script>
+    document.getElementById('testBtn').addEventListener('click', async () => {
+      const resultDiv = document.getElementById('result');
+      resultDiv.innerHTML = 'Testing...';
+
+      try {
+        const urls = [
+          'https://okzcrijmvpwouqemvzat.supabase.co/auth/v1/token?grant_type=password',
+          'https://okzcrijmvpwouqemvzat.supabase.com/auth/v1/token?grant_type=password'
+        ];
+
+        for (const url of urls) {
+          try {
+            resultDiv.innerHTML += `<p>Testing URL: ${url}</p>`;
+            const response = await fetch(url, {
+              method: 'HEAD',
+              mode: 'no-cors'
+            });
+            resultDiv.innerHTML += `<p>Response for ${url}: ${response.status}</p>`;
+          } catch (error) {
+            resultDiv.innerHTML += `<p>Error for ${url}: ${error.message}</p>`;
+          }
+        }
+
+        resultDiv.innerHTML += '<p>Test complete</p>';
+      } catch (error) {
+        resultDiv.innerHTML += `<p>Overall error: ${error.message}</p>`;
+      }
+    });
+  </script>
+</body>
+</html> 

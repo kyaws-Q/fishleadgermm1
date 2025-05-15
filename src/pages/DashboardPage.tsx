@@ -13,7 +13,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { useApp } from "@/contexts/AppContext";
-import { useWebSocket } from "@/contexts/WebSocketProvider";
+import { useWebSocket } from "@/contexts/WebSocketContext";
 import { Badge } from "@/components/ui/badge";
 import { motion } from "framer-motion";
 import { Skeleton } from "@/components/ui/skeleton";

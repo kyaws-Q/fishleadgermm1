@@ -602,23 +602,12 @@ export function PurchaseTable() {
 
   // Add this function to handle deleting a group:
   const handleDeleteGroup = (groupKey: string) => {
-    console.log("Delete requested for group:", groupKey);
-
     // First validate if we have matching purchases
     const [companyName, purchaseDate, buyerName] = groupKey.split('-');
-
-    // Log the values for debugging
-    console.log("Looking for purchases with:", {
-      companyName,
-      purchaseDate,
-      buyerName
-    });
 
     // Get the purchases directly from the current group we're rendering
     // This ensures we're using the exact same purchases that are being displayed
     const groupPurchases = groupedPurchases[groupKey] || [];
-
-    console.log("Group purchases from current view:", groupPurchases.length);
 
     if (groupPurchases.length === 0) {
       // Fallback to searching in all purchases if not found in grouped purchases
@@ -627,8 +616,6 @@ export function PurchaseTable() {
         p.purchaseDate === purchaseDate &&
         p.buyerName === buyerName
       );
-
-      console.log("Found matching purchases from all purchases:", matchingPurchases.length);
 
       if (matchingPurchases.length === 0) {
         toast.error("No matching purchases found to delete. Please try again.");

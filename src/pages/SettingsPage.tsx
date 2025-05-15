@@ -13,7 +13,7 @@ import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { ThemeSwitcher } from "@/components/ThemeSwitcher";
-import { useTheme } from "@/contexts/ThemeProvider";
+import { useTheme } from "@/hooks/use-theme";
 
 export default function SettingsPage() {
   const { user, logout, updateProfile, currency, setCurrency } = useApp();

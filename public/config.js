@@ -1,6 +1,0 @@
-// Runtime configuration
-window.ENV = {
-  SUPABASE_URL: "https://okzcrijmvpwouqemvzat.supabase.co",
-  SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9remNyaWptdnB3b3VxZW12emF0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MTQ0ODE2MDksImV4cCI6MjAzMDA1NzYwOX0.h5yjY7nOvvSFsNiRxH69WzQhGl8kyGvzYUcYe6z-WGE",
-  MARITIME_API_KEY: "3fd4a9f30amsh950562621999ec2p1b32c8jsnf7faa1c1fd1f"
-};
