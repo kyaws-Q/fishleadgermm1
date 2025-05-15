@@ -1,18 +1,11 @@
 
-import { useEffect, useState } from 'react';
 import { useApp } from '@/contexts/AppContext';
 
-type Theme = 'light' | 'dark' | 'blue' | 'green';
-
+// Use the theme from AppContext
 export function useTheme() {
   const { appTheme, setAppTheme } = useApp();
-  const [theme, setTheme] = useState<string>(appTheme || 'light');
-  
-  useEffect(() => {
-    if (appTheme) {
-      setTheme(`theme-${appTheme}`);
-    }
-  }, [appTheme]);
-  
-  return { theme, setAppTheme };
+  return {
+    theme: appTheme,
+    setTheme: setAppTheme
+  };
 }

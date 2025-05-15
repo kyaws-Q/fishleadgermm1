@@ -22,3 +22,17 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+.cursor/
+.cursor
+
+# Environment variables
+.env
+.env.*
+!.env.example
+!.env.production
+!.env.development
+
+# Package manager
+bun.lockb
+.bun
+.vercel

@@ -83,8 +83,59 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "shipments"
             referencedColumns: ["id"]
-          },
+          }
         ]
+      }
+      purchases: {
+        Row: {
+          id: string
+          user_id: string
+          company_name: string
+          buyer_name: string
+          purchase_date: string
+          fish_name: string
+          size_kg: number
+          quantity: number
+          price_per_unit: number
+          total_price: number
+          payment_status: 'paid' | 'unpaid' | 'pending'
+          is_deleted: boolean
+          deleted_at: string | null
+          created_at: string | null
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          company_name: string
+          buyer_name: string
+          purchase_date: string
+          fish_name: string
+          size_kg: number
+          quantity: number
+          price_per_unit: number
+          total_price: number
+          payment_status?: 'paid' | 'unpaid' | 'pending'
+          is_deleted?: boolean
+          deleted_at?: string | null
+          created_at?: string | null
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          company_name?: string
+          buyer_name?: string
+          purchase_date?: string
+          fish_name?: string
+          size_kg?: number
+          quantity?: number
+          price_per_unit?: number
+          total_price?: number
+          payment_status?: 'paid' | 'unpaid' | 'pending'
+          is_deleted?: boolean
+          deleted_at?: string | null
+          created_at?: string | null
+        }
+        Relationships: []
       }
       shipments: {
         Row: {
@@ -115,7 +166,7 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "buyers"
             referencedColumns: ["id"]
-          },
+          }
         ]
       }
       user_profiles: {
@@ -256,9 +307,3 @@ export type CompositeTypes<
   : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
     ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
     : never
-
-export const Constants = {
-  public: {
-    Enums: {},
-  },
-} as const

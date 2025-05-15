@@ -1,6 +1,5 @@
-
 import { useState, useEffect } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,6 +12,15 @@ import { Buyer, FishEntryFormData, COMMON_FISH_NAMES, COMMON_FISH_SIZES } from "
 import { getBuyers } from "@/services/buyerService";
 import { createShipment } from "@/services/shipmentService";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  Command,
+  CommandInput,
+  CommandList,
+  CommandItem,
+  CommandEmpty,
+} from "@/components/ui/command";
+import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
+import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 
 interface ShipmentFormProps {
   open: boolean;
@@ -44,6 +52,7 @@ export function ShipmentForm({ open, onClose, initialData }: ShipmentFormProps) 
   const [isLoading, setIsLoading] = useState(false);
   const [date, setDate] = useState<Date | undefined>(new Date());
   const [buyerId, setBuyerId] = useState<string>("");
+  const [buyerName, setBuyerName] = useState<string>("");
   const [containerNumber, setContainerNumber] = useState<string>("");
   const [vesselName, setVesselName] = useState<string>("");
   const [entries, setEntries] = useState<Partial<FishEntryFormData>[]>([
@@ -59,6 +68,7 @@ export function ShipmentForm({ open, onClose, initialData }: ShipmentFormProps) 
         const { shipment, entries } = initialData;
         setDate(new Date(shipment.date));
         setBuyerId(shipment.buyerId);
+        setBuyerName(buyers.find(b => b.id === shipment.buyerId)?.name || "");
         setContainerNumber(shipment.containerNumber || "");
         setVesselName(shipment.vesselName || "");
         setEntries(entries.map(entry => ({
@@ -75,6 +85,7 @@ export function ShipmentForm({ open, onClose, initialData }: ShipmentFormProps) 
         // Reset form for new shipment
         setDate(new Date());
         setBuyerId("");
+        setBuyerName("");
         setContainerNumber("");
         setVesselName("");
         setEntries([
@@ -145,8 +156,8 @@ export function ShipmentForm({ open, onClose, initialData }: ShipmentFormProps) 
       return;
     }
 
-    if (!buyerId) {
-      toast.error("Please select a buyer");
+    if (!buyerId && !buyerName) {
+      toast.error("Please select or enter a buyer");
       return;
     }
 
@@ -165,16 +176,22 @@ export function ShipmentForm({ open, onClose, initialData }: ShipmentFormProps) 
     setIsLoading(true);
 
     try {
-      const selectedBuyer = buyers.find(b => b.id === buyerId);
-      
-      if (!selectedBuyer) {
-        throw new Error("Selected buyer not found");
+      let selectedBuyer = buyers.find(b => b.id === buyerId);
+      let finalBuyerId = buyerId;
+      let finalBuyerName = buyerName;
+      if (!selectedBuyer && buyerName) {
+        // Add new buyer to DB/service here if needed
+        // For now, just use the typed name
+        finalBuyerId = undefined;
+        finalBuyerName = buyerName;
+      } else if (selectedBuyer) {
+        finalBuyerName = selectedBuyer.name;
       }
 
       const shipmentData = {
         userId: user.id,
-        buyerId: buyerId,
-        buyerName: selectedBuyer.name,
+        buyerId: finalBuyerId,
+        buyerName: finalBuyerName,
         date: date.toISOString().split('T')[0],
         vesselName: vesselName || undefined,
         containerNumber: containerNumber || undefined,
@@ -216,194 +233,156 @@ export function ShipmentForm({ open, onClose, initialData }: ShipmentFormProps) 
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>{initialData ? "Edit Shipment" : "Create New Shipment"}</DialogTitle>
-        </DialogHeader>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
-          <div>
-            <Label htmlFor="date">Shipment Date</Label>
-            <DatePicker
-              date={date}
-              onSelect={setDate}
-            />
-          </div>
-          <div>
-            <Label htmlFor="buyer">Buyer</Label>
-            <Select value={buyerId} onValueChange={setBuyerId}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select buyer" />
-              </SelectTrigger>
-              <SelectContent>
-                {buyers.map(buyer => (
-                  <SelectItem key={buyer.id} value={buyer.id}>
-                    {buyer.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <Label htmlFor="vesselName">Vessel Name (Optional)</Label>
-            <Input
-              id="vesselName"
-              value={vesselName}
-              onChange={(e) => setVesselName(e.target.value)}
-            />
-          </div>
-          <div>
-            <Label htmlFor="containerNumber">Container Number (Optional)</Label>
-            <Input
-              id="containerNumber"
-              value={containerNumber}
-              onChange={(e) => setContainerNumber(e.target.value)}
-            />
-          </div>
-        </div>
-
-        <div className="border rounded-md p-4 mt-4">
-          <h3 className="font-medium mb-4">Fish Entries</h3>
-          
-          <ScrollArea className="h-[400px] overflow-y-auto">
-            <div className="overflow-x-auto">
-              <table className="w-full excel-style">
-                <thead>
-                  <tr>
-                    <th>Fish Name</th>
-                    <th>Size</th>
-                    <th>Net KG/MC</th>
-                    <th>Qty MC</th>
-                    <th>Qty KGs</th>
-                    <th>Price/KG</th>
-                    <th>Total USD</th>
-                    <th></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {entries.map((entry, index) => (
-                    <tr key={index}>
-                      <td>
-                        <Select 
-                          value={entry.fish_name || ""} 
-                          onValueChange={(value) => handleEntryChange(index, "fish_name", value)}
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto bg-gradient-to-br from-white/90 to-gray-100/90 shadow-2xl rounded-xl border-0 p-0">
+        <DialogTitle asChild>
+          <VisuallyHidden>{initialData ? "Edit Shipment" : "Create New Shipment"}</VisuallyHidden>
+        </DialogTitle>
+        <DialogDescription asChild>
+          <VisuallyHidden>Enter shipment details and fish entries below.</VisuallyHidden>
+        </DialogDescription>
+        <div className="h-[1px] w-full bg-gray-200" /> {/* Subtle gap between topbar and card */}
+        <Card className="bg-white/90 shadow-lg rounded-xl border-0">
+          <CardHeader className="pb-2 border-b border-gray-100 bg-white/80 rounded-t-xl">
+            <CardTitle className="text-2xl font-bold text-gray-800">
+              {initialData ? "Edit Shipment" : "Create New Shipment"}
+            </CardTitle>
+            <p className="text-sm text-muted-foreground mt-1">Enter shipment details and fish entries below.</p>
+          </CardHeader>
+          <CardContent className="p-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="date">Shipment Date</Label>
+                <DatePicker date={date} onSelect={setDate} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="buyer">Buyer</Label>
+                <div className="relative">
+                  <Command className="w-full border rounded-md bg-background shadow-sm focus-within:ring-2 focus-within:ring-primary">
+                    <CommandInput
+                      placeholder="Type or select buyer..."
+                      value={buyerName}
+                      onValueChange={setBuyerName}
+                      autoFocus
+                    />
+                    <CommandList>
+                      {buyers.length === 0 && <CommandEmpty>No buyers found.</CommandEmpty>}
+                      {buyers.map(buyer => (
+                        <CommandItem
+                          key={buyer.id}
+                          value={buyer.name}
+                          onSelect={() => {
+                            setBuyerId(buyer.id);
+                            setBuyerName(buyer.name);
+                          }}
                         >
-                          <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Select fish" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {COMMON_FISH_NAMES.map(name => (
-                              <SelectItem key={name} value={name}>
-                                {name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </td>
-                      <td>
-                        <Select 
-                          value={entry.description || ""} 
-                          onValueChange={(value) => handleEntryChange(index, "description", value)}
-                        >
-                          <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Select size" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {COMMON_FISH_SIZES.map(size => (
-                              <SelectItem key={size} value={size}>
-                                {size}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </td>
-                      <td>
-                        <Input
-                          type="number"
-                          value={entry.net_kg_per_mc || ""}
-                          onChange={(e) => handleEntryChange(index, "net_kg_per_mc", parseFloat(e.target.value))}
-                          className="w-full"
-                        />
-                      </td>
-                      <td>
-                        <Input
-                          type="number"
-                          value={entry.qty_mc || ""}
-                          onChange={(e) => handleEntryChange(index, "qty_mc", parseInt(e.target.value))}
-                          className="w-full"
-                        />
-                      </td>
-                      <td>
-                        <Input
-                          type="number"
-                          value={entry.qty_kgs || ""}
-                          onChange={(e) => handleEntryChange(index, "qty_kgs", parseFloat(e.target.value))}
-                          className="w-full"
-                        />
-                      </td>
-                      <td>
-                        <Input
-                          type="number"
-                          value={entry.price_per_kg || ""}
-                          onChange={(e) => handleEntryChange(index, "price_per_kg", parseFloat(e.target.value))}
-                          className="w-full"
-                        />
-                      </td>
-                      <td>
-                        <Input
-                          type="number"
-                          value={entry.total_usd?.toFixed(2) || "0.00"}
-                          readOnly
-                          className="w-full bg-muted"
-                        />
-                      </td>
-                      <td>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => removeEntry(index)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-                <tfoot>
-                  <tr>
-                    <td colSpan={6} className="text-right font-medium">
-                      Grand Total:
-                    </td>
-                    <td className="font-medium">
-                      ${calculateGrandTotal().toFixed(2)}
-                    </td>
-                    <td></td>
-                  </tr>
-                </tfoot>
-              </table>
+                          {buyer.name}
+                        </CommandItem>
+                      ))}
+                    </CommandList>
+                  </Command>
+                </div>
+              </div>
+              <div>
+                <Label htmlFor="vesselName">Vessel Name (Optional)</Label>
+                <Input id="vesselName" value={vesselName} onChange={(e) => setVesselName(e.target.value)} />
+              </div>
+              <div>
+                <Label htmlFor="containerNumber">Container Number (Optional)</Label>
+                <Input id="containerNumber" value={containerNumber} onChange={(e) => setContainerNumber(e.target.value)} />
+              </div>
             </div>
-          </ScrollArea>
-          
-          <Button
-            type="button"
-            variant="outline"
-            onClick={addEntry}
-            className="mt-4"
-          >
-            <Plus className="h-4 w-4 mr-2" /> Add Entry
-          </Button>
-        </div>
 
-        <div className="flex justify-end gap-2 mt-4">
-          <Button variant="outline" onClick={onClose} disabled={isLoading}>
-            Cancel
-          </Button>
-          <Button onClick={handleSubmit} disabled={isLoading}>
-            <Save className="h-4 w-4 mr-2" />
-            {isLoading ? "Saving..." : "Save Shipment"}
-          </Button>
-        </div>
+            <div className="mt-6">
+              <h3 className="font-semibold mb-2 text-lg text-gray-700">Fish Entries</h3>
+              <div className="rounded-xl shadow border border-gray-100 bg-white/80 overflow-hidden">
+                <ScrollArea className="h-[320px] overflow-y-auto">
+                  <table className="w-full text-sm">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-3 py-2 text-left font-medium text-gray-700">Fish Name</th>
+                        <th className="px-3 py-2 text-left font-medium text-gray-700">Size</th>
+                        <th className="px-3 py-2 text-left font-medium text-gray-700">Net KG/MC</th>
+                        <th className="px-3 py-2 text-left font-medium text-gray-700">Qty MC</th>
+                        <th className="px-3 py-2 text-left font-medium text-gray-700">Qty KGs</th>
+                        <th className="px-3 py-2 text-left font-medium text-gray-700">Price/KG</th>
+                        <th className="px-3 py-2 text-left font-medium text-gray-700">Total USD</th>
+                        <th className="px-2"></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {entries.map((entry, index) => (
+                        <tr key={index} className="even:bg-gray-50">
+                          <td className="px-3 py-2">
+                            <Select value={entry.fish_name || ""} onValueChange={(value) => handleEntryChange(index, "fish_name", value)}>
+                              <SelectTrigger className="w-full">
+                                <SelectValue placeholder="Select fish" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {COMMON_FISH_NAMES.map(name => (
+                                  <SelectItem key={name} value={name}>{name}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </td>
+                          <td className="px-3 py-2">
+                            <Input
+                              type="text"
+                              value={entry.description || ""}
+                              onChange={e => handleEntryChange(index, "description", e.target.value)}
+                              className="w-full"
+                              placeholder="Enter size"
+                            />
+                          </td>
+                          <td className="px-3 py-2">
+                            <Input type="number" value={entry.net_kg_per_mc || ""} onChange={(e) => handleEntryChange(index, "net_kg_per_mc", parseFloat(e.target.value))} className="w-full" />
+                          </td>
+                          <td className="px-3 py-2">
+                            <Input type="number" value={entry.qty_mc || ""} onChange={(e) => handleEntryChange(index, "qty_mc", parseInt(e.target.value))} className="w-full" />
+                          </td>
+                          <td className="px-3 py-2">
+                            <Input type="number" value={entry.qty_kgs || ""} onChange={(e) => handleEntryChange(index, "qty_kgs", parseFloat(e.target.value))} className="w-full" />
+                          </td>
+                          <td className="px-3 py-2">
+                            <Input type="number" value={entry.price_per_kg || ""} onChange={(e) => handleEntryChange(index, "price_per_kg", parseFloat(e.target.value))} className="w-full" />
+                          </td>
+                          <td className="px-3 py-2">
+                            <Input type="number" value={entry.total_usd?.toFixed(2) || "0.00"} readOnly className="w-full bg-muted" />
+                          </td>
+                          <td className="px-2 text-center">
+                            <Button type="button" variant="ghost" size="icon" onClick={() => removeEntry(index)}>
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                    <tfoot>
+                      <tr>
+                        <td colSpan={6} className="text-right font-medium px-3 py-2">Grand Total:</td>
+                        <td className="font-medium px-3 py-2">${calculateGrandTotal().toFixed(2)}</td>
+                        <td></td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </ScrollArea>
+              </div>
+              <div className="flex justify-end mt-3">
+                <Button type="button" variant="outline" onClick={addEntry} className="rounded-md shadow-sm">
+                  <Plus className="h-4 w-4 mr-2" /> Add Entry
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+          <CardFooter className="flex justify-end gap-2 bg-white/80 rounded-b-xl border-t border-gray-100">
+            <Button variant="outline" onClick={onClose} disabled={isLoading} className="rounded-md">
+              Cancel
+            </Button>
+            <Button onClick={handleSubmit} disabled={isLoading} className="rounded-md shadow-sm">
+              <Save className="h-4 w-4 mr-2" />
+              {isLoading ? "Saving..." : "Save Shipment"}
+            </Button>
+          </CardFooter>
+        </Card>
       </DialogContent>
     </Dialog>
   );

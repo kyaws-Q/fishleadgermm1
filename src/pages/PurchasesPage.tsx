@@ -1,41 +1,42 @@
-
-import { useState } from "react";
-import { DashboardLayout } from "@/components/DashboardLayout";
-import { Button } from "@/components/ui/button";
-import { PurchaseTable } from "@/components/PurchaseTable";
-import { PurchaseForm } from "@/components/PurchaseForm";
-import { ExportButtons } from "@/components/ExportButtons";
-import { TableStyleSelector } from "@/components/TableStyleSelector";
-import { Plus, FileDown, Settings, Palette } from "lucide-react";
-import { useApp } from "@/contexts/AppContext";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { AppTheme } from "@/types";
+import { useState } from 'react';
+// Removed DashboardLayout import
+import { PurchaseTable } from '@/components/PurchaseTable';
+import { PurchaseForm } from '@/components/PurchaseForm';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Plus, Settings, Trash2 } from 'lucide-react';
+import { useApp } from '@/contexts/AppContext';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { RecycleBin } from '@/components/RecycleBin';
 
 export default function PurchasesPage() {
   const [isAddPurchaseOpen, setIsAddPurchaseOpen] = useState(false);
-  const { companyName, setCompanyName, appTheme, setAppTheme } = useApp();
-  
+  const { companyName, setCompanyName } = useApp();
+
   return (
-    <DashboardLayout>
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+    <div className="bg-[#f6f7f9] min-h-screen w-full pb-8">
+      <div className="max-w-6xl mx-auto w-full px-2 sm:px-4 md:px-6 pt-6">
+        {/* Header Card */}
+        <div className="bg-white px-6 py-4 border border-gray-100 rounded-2xl shadow-xl flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-6">
         <div>
-          <h1 className="text-3xl font-bold">Purchase History</h1>
-          <p className="text-muted-foreground mt-1">
-            View and manage all your fish purchase records
-          </p>
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 font-sans leading-tight">Purchase History</h1>
+            <p className="mt-0.5 text-gray-500 text-base font-sans">View and manage all your fish purchase records</p>
         </div>
-        <div className="flex flex-wrap gap-3">
-          <Button onClick={() => setIsAddPurchaseOpen(true)}>
-            <Plus className="mr-2 h-4 w-4" /> Add Purchase
+          <div className="flex gap-2 items-center mt-2 sm:mt-0">
+            <Button
+              onClick={() => setIsAddPurchaseOpen(true)}
+              className="rounded-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold px-6 py-2 shadow-xl text-base font-sans"
+            >
+              <Plus className="mr-2 h-5 w-5" /> Add Purchase
           </Button>
         </div>
       </div>
-      
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-        <Card>
+
+        {/* Settings and Data Management Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+          <Card className="rounded-2xl shadow-xl border border-gray-100">
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
               <span>Company Settings</span>
@@ -45,9 +46,9 @@ export default function PurchasesPage() {
           <CardContent>
             <div className="space-y-4">
               <div>
-                <Label htmlFor="companyName">Company Name (for Reports)</Label>
+                <Label htmlFor="company-name">Company Name (for Reports)</Label>
                 <Input
-                  id="companyName"
+                  id="company-name"
                   value={companyName}
                   onChange={(e) => setCompanyName(e.target.value)}
                   className="mt-1"
@@ -56,55 +57,48 @@ export default function PurchasesPage() {
             </div>
           </CardContent>
         </Card>
-        
-        <Card>
+
+          <Card className="rounded-2xl shadow-xl border border-gray-100">
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
-              <span>Display Settings</span>
-              <Palette className="h-5 w-5 text-muted-foreground" />
+              <span>Data Management</span>
+              <Trash2 className="h-5 w-5 text-muted-foreground" />
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="appTheme">App Theme</Label>
-                <Select
-                  value={appTheme}
-                  onValueChange={(value) => setAppTheme(value as AppTheme)}
-                >
-                  <SelectTrigger className="mt-1">
-                    <SelectValue placeholder="Select theme" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="light">Light Mode</SelectItem>
-                    <SelectItem value="dark">Dark Mode</SelectItem>
-                    <SelectItem value="blue">Blue Theme</SelectItem>
-                    <SelectItem value="green">Green Theme</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label>Table Style</Label>
-                <div className="mt-1">
-                  <TableStyleSelector />
-                </div>
-              </div>
-            </div>
+            <p className="mb-4 text-sm text-muted-foreground">
+              Deleted purchases will be moved to the recycle bin for 30 days before permanent deletion.
+            </p>
+            <Button variant="destructive" size="sm" onClick={() => document.getElementById('deletedTab')?.click()}>
+              View Recycle Bin
+            </Button>
           </CardContent>
         </Card>
       </div>
-      
-      <Card className="mb-8">
-        <CardHeader>
-          <CardTitle>Export Options</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <ExportButtons />
-        </CardContent>
-      </Card>
-      
-      <PurchaseTable />
-      <PurchaseForm open={isAddPurchaseOpen} onClose={() => setIsAddPurchaseOpen(false)} />
-    </DashboardLayout>
+
+        {/* Tabs Section */}
+        <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-4 sm:p-6 mb-8">
+      <Tabs defaultValue="active" className="w-full">
+            <TabsList className="mb-6 bg-gray-50 rounded-lg p-1 flex gap-2">
+              <TabsTrigger value="active" className="flex-1 data-[state=active]:bg-white data-[state=active]:shadow text-base rounded-lg">Active Purchases</TabsTrigger>
+              <TabsTrigger value="deleted" id="deletedTab" className="flex-1 data-[state=active]:bg-white data-[state=active]:shadow text-base rounded-lg">Recycle Bin</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="active">
+          <PurchaseTable />
+        </TabsContent>
+
+        <TabsContent value="deleted">
+          <RecycleBin />
+        </TabsContent>
+      </Tabs>
+        </div>
+      </div>
+
+      <PurchaseForm
+        isOpen={isAddPurchaseOpen}
+        onClose={() => setIsAddPurchaseOpen(false)}
+      />
+    </div>
   );
 }

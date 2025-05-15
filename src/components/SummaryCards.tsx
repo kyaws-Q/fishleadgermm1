@@ -1,77 +1,75 @@
-
 import { useApp } from "@/contexts/AppContext";
-import { Card, CardContent } from "@/components/ui/card";
-import { CircleDollarSign, LineChart, ShoppingCart, TrendingUp } from "lucide-react";
+import { ArrowUpRight, ArrowDownRight, ShoppingCart, DollarSign, LineChart, Users } from "lucide-react";
+import { Card } from "@/components/ui/card";
 
 export function SummaryCards() {
-  const { purchases, timeFrame } = useApp();
+  const { purchases } = useApp();
   
-  // Calculate total purchases
   const totalPurchases = purchases.length;
-  
-  // Calculate total spent
   const totalSpent = purchases.reduce((sum, purchase) => sum + purchase.totalPrice, 0);
-  
-  // Calculate average purchase
   const averagePurchase = totalPurchases > 0 ? totalSpent / totalPurchases : 0;
-  
-  // Calculate unique suppliers
   const uniqueSuppliers = new Set(purchases.map(p => p.companyName)).size;
 
-  const cards = [
+  const purchaseTrend = { value: "+5%", positive: true };
+  const spentTrend = { value: "-2%", positive: false };
+  const avgTrend = { value: "+1.5%", positive: true };
+  const supplierTrend = { value: "+2", positive: true };
+
+  const TrendIndicator = ({ trend }: { trend: { value: string, positive: boolean } }) => (
+    <div className={`flex items-center text-xs mt-1 ${trend.positive ? 'text-green-500' : 'text-red-500'}`}>
+      {trend.positive ? <ArrowUpRight className="w-3 h-3 mr-0.5" /> : <ArrowDownRight className="w-3 h-3 mr-0.5" />}
+      <span>{trend.value} vs last period</span>
+    </div>
+  );
+
+  const cardData = [
     {
       title: "Total Purchases",
-      value: totalPurchases.toString(),
-      label: "purchases",
-      color: "bg-indigo-500",
-      increase: "+12%",
-      icon: <ShoppingCart className="h-5 w-5 text-indigo-500" />,
+      value: totalPurchases,
+      trend: purchaseTrend,
+      icon: <ShoppingCart className="text-indigo-500 w-8 h-8" />, // larger icon
+      formatAsCurrency: false
     },
     {
       title: "Total Spent",
-      value: `$${totalSpent.toFixed(2)}`,
-      label: "spent",
-      color: "bg-green-500",
-      increase: "+5.2%",
-      icon: <CircleDollarSign className="h-5 w-5 text-green-500" />,
+      value: totalSpent,
+      trend: spentTrend,
+      icon: <DollarSign className="text-emerald-500 w-8 h-8" />, // larger icon
+      formatAsCurrency: true
     },
     {
       title: "Average Purchase",
-      value: `$${averagePurchase.toFixed(2)}`,
-      label: "per transaction",
-      color: "bg-blue-500",
-      increase: "+3.1%",
-      icon: <LineChart className="h-5 w-5 text-blue-500" />,
+      value: averagePurchase,
+      trend: avgTrend,
+      icon: <LineChart className="text-sky-500 w-8 h-8" />, // larger icon
+      formatAsCurrency: true
     },
     {
       title: "Unique Suppliers",
-      value: uniqueSuppliers.toString(),
-      label: "suppliers",
-      color: "bg-rose-500",
-      increase: "+2",
-      icon: <TrendingUp className="h-5 w-5 text-rose-500" />,
+      value: uniqueSuppliers,
+      trend: supplierTrend,
+      icon: <Users className="text-purple-500 w-8 h-8" />, // larger icon
+      formatAsCurrency: false
     }
   ];
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-      {cards.map((card, index) => (
-        <Card key={index} className="border shadow-sm bg-white">
-          <CardContent className="p-4">
-            <div className="flex justify-between items-start">
-              <div>
-                <p className="text-sm text-muted-foreground">{card.title}</p>
-                <h3 className="text-2xl font-bold mt-1">{card.value}</h3>
-                <div className="flex items-center mt-1">
-                  <span className="text-xs text-muted-foreground">{card.label}</span>
-                  <span className="text-xs text-green-600 ml-2 flex items-center">
-                    {card.increase}
-                  </span>
-                </div>
-              </div>
-              <div className="rounded-full p-2 bg-muted">{card.icon}</div>
-            </div>
-          </CardContent>
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 w-full max-w-6xl mx-auto">
+      {cardData.map((card, index) => (
+        <Card
+          key={index}
+          className="w-full h-full flex flex-col items-start justify-center rounded-2xl shadow-xl bg-gradient-to-br from-white via-blue-50 to-blue-100 border border-blue-100 p-5 sm:p-6 md:p-8 text-left"
+        >
+          <div className="flex items-center gap-2 mb-2">
+            {card.icon}
+            <span className="text-lg md:text-xl font-semibold text-gray-700">{card.title}</span>
+        </div>
+          <div className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-1">
+            {card.formatAsCurrency
+              ? `$${card.value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+              : card.value}
+        </div>
+          <TrendIndicator trend={card.trend} />
         </Card>
       ))}
     </div>

@@ -1,10 +1,10 @@
-import { useState } from "react";
-import { DashboardLayout } from "@/components/DashboardLayout";
+import { useState, useEffect } from "react";
+// Removed DashboardLayout import
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, Ship, Box, Filter, Calendar, Download } from "lucide-react";
+import { Plus, Ship, Box, Filter, Calendar, Download, Search, ArrowUpDown } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { 
+import {
   Table,
   TableBody,
   TableCell,
@@ -16,45 +16,96 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DatePicker } from "@/components/ui/date-picker";
 import { ShipmentForm } from "@/components/ShipmentForm";
+import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { exportShipmentToExcel } from "@/utils/excelExport";
 import { useApp } from "@/contexts/AppContext";
+import { format } from "date-fns";
+import { Shipment } from "@/types/shipment";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function ShipmentsPage() {
   const { companyName } = useApp();
   const [isShipmentFormOpen, setIsShipmentFormOpen] = useState(false);
   const [filterDate, setFilterDate] = useState<Date | undefined>(undefined);
   const [filterBuyer, setFilterBuyer] = useState("");
-  const [filterVessel, setFilterVessel] = useState("");
-  
-  // Mock data for now 
-  const mockShipments = [
-    {
-      id: "ship-1",
-      buyerName: "XYZ Fish Traders",
-      date: "2025-05-01",
-      vesselName: "Pacific Star",
-      containerNumber: "CONT123456",
-      totalValue: 12580.75,
-      entriesCount: 5
-    },
-    {
-      id: "ship-2",
-      buyerName: "ABC Seafood Co",
-      date: "2025-04-28",
-      vesselName: "Ocean Voyager",
-      containerNumber: "CONT789012",
-      totalValue: 8930.50,
-      entriesCount: 3
+  const [filterStatus, setFilterStatus] = useState("all");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sortField, setSortField] = useState<keyof Shipment>("date");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
+  const [shipments, setShipments] = useState<Shipment[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    fetchShipments();
+  }, []);
+
+  const fetchShipments = async () => {
+    try {
+      setIsLoading(true);
+      const { data, error } = await supabase
+        .from('shipments')
+        .select('*')
+        .order('date', { ascending: false });
+      if (error) throw error;
+      setShipments(data || []);
+    } catch (error) {
+      console.error("Error fetching shipments:", error);
+      toast.error("Failed to load shipments");
+    } finally {
+      setIsLoading(false);
     }
-  ];
+  };
+
+  const handleSort = (field: keyof Shipment) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+    } else {
+      setSortField(field);
+      setSortDirection("asc");
+    }
+  };
+
+  const filteredShipments = shipments
+    .filter(shipment => {
+      if (filterDate && !shipment.date.includes(format(filterDate, "yyyy-MM-dd"))) return false;
+      if (filterBuyer && !shipment.buyerName.toLowerCase().includes(filterBuyer.toLowerCase())) return false;
+      if (filterStatus !== "all" && shipment.status !== filterStatus) return false;
+      if (searchQuery) {
+        const query = searchQuery.toLowerCase();
+        return (
+          shipment.buyerName.toLowerCase().includes(query) ||
+          shipment.containerNumber?.toLowerCase().includes(query) ||
+          shipment.vesselName?.toLowerCase().includes(query) ||
+          shipment.tracking_number?.toLowerCase().includes(query)
+        );
+      }
+      return true;
+    })
+    .sort((a, b) => {
+      const aValue = a[sortField];
+      const bValue = b[sortField];
+      if (!aValue || !bValue) return 0;
+      const comparison = aValue > bValue ? 1 : -1;
+      return sortDirection === "asc" ? comparison : -comparison;
+    });
+
+  const getStatusColor = (status: string) => {
+    switch (status?.toLowerCase()) {
+      case "processing": return "bg-yellow-100 text-yellow-800";
+      case "shipped": return "bg-blue-100 text-blue-800";
+      case "delivered": return "bg-green-100 text-green-800";
+      case "cancelled": return "bg-red-100 text-red-800";
+      default: return "bg-gray-100 text-gray-800";
+    }
+  };
 
   const handleExportToExcel = async (shipmentId: string) => {
     try {
       // In a real app, you would fetch the shipment details by ID
       // For now, we'll use mock data as an example
       toast.success("Exporting shipment to Excel...");
-      
+
       // This is mock data - in a real app, fetch the actual ShipmentWithDetails
       const mockShipmentDetails = {
         shipment: {
@@ -155,9 +206,9 @@ export default function ShipmentsPage() {
         ],
         grandTotal: 820
       };
-      
+
       await exportShipmentToExcel(mockShipmentDetails);
-      
+
     } catch (error) {
       console.error("Error exporting to Excel:", error);
       toast.error("Failed to export shipment");
@@ -165,132 +216,154 @@ export default function ShipmentsPage() {
   };
 
   return (
-    <DashboardLayout>
+    <>
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
         <div>
           <h1 className="text-3xl font-bold">Shipments</h1>
           <p className="text-muted-foreground mt-1">
-            Create and manage fish shipments
+            Track and manage your seafood shipments
           </p>
         </div>
         <div className="flex flex-wrap gap-3">
-          <Button onClick={() => setIsShipmentFormOpen(true)}>
+          <Button onClick={() => setIsShipmentFormOpen(true)} variant="default">
             <Plus className="mr-2 h-4 w-4" /> New Shipment
           </Button>
         </div>
       </div>
 
-      {/* Filters */}
+      {/* Search and Filters */}
       <Card className="mb-6">
         <CardHeader>
-          <CardTitle className="flex items-center">
-            <Filter className="h-5 w-5 mr-2" /> Filters
+          <CardTitle className="flex items-center text-lg">
+            <Filter className="h-5 w-5 mr-2" /> Search & Filters
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <Label htmlFor="dateFilter">Shipment Date</Label>
-              <div className="mt-1">
-                <DatePicker date={filterDate} onSelect={setFilterDate} />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="col-span-1 md:col-span-2 lg:col-span-1">
+              <Label htmlFor="search">Search</Label>
+              <div className="relative">
+                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  id="search"
+                  placeholder="Search shipments..."
+                  className="pl-8"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
               </div>
             </div>
             <div>
+              <Label htmlFor="dateFilter">Shipment Date</Label>
+              <DatePicker date={filterDate} onSelect={setFilterDate} />
+            </div>
+            <div>
               <Label htmlFor="buyerFilter">Buyer</Label>
-              <Input 
+              <Input
                 id="buyerFilter"
+                placeholder="Filter by buyer..."
                 value={filterBuyer}
                 onChange={(e) => setFilterBuyer(e.target.value)}
-                placeholder="Filter by buyer name"
-                className="mt-1"
               />
             </div>
             <div>
-              <Label htmlFor="vesselFilter">Vessel/Container</Label>
-              <Input 
-                id="vesselFilter"
-                value={filterVessel}
-                onChange={(e) => setFilterVessel(e.target.value)}
-                placeholder="Filter by vessel or container"
-                className="mt-1"
-              />
+              <Label htmlFor="statusFilter">Status</Label>
+              <Select value={filterStatus} onValueChange={setFilterStatus}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Statuses</SelectItem>
+                  <SelectItem value="Processing">Processing</SelectItem>
+                  <SelectItem value="Shipped">Shipped</SelectItem>
+                  <SelectItem value="Delivered">Delivered</SelectItem>
+                  <SelectItem value="Cancelled">Cancelled</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
         </CardContent>
       </Card>
-      
-      {/* Shipments List */}
+
+      {/* Shipments Table */}
       <Card>
         <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-[180px] cursor-pointer" onClick={() => handleSort("date")}>
+                  <div className="flex items-center">
+                    Date
+                    <ArrowUpDown className="ml-2 h-4 w-4" />
+                  </div>
+                </TableHead>
+                <TableHead className="cursor-pointer" onClick={() => handleSort("buyerName")}>
+                  <div className="flex items-center">
+                    Buyer
+                    <ArrowUpDown className="ml-2 h-4 w-4" />
+                  </div>
+                </TableHead>
+                <TableHead>Container</TableHead>
+                <TableHead>Vessel</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {isLoading ? (
                 <TableRow>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Buyer</TableHead>
-                  <TableHead>Vessel/Container</TableHead>
-                  <TableHead>Entries</TableHead>
-                  <TableHead>Total Value</TableHead>
-                  <TableHead>Actions</TableHead>
+                  <TableCell colSpan={6} className="text-center py-8">
+                    Loading shipments...
+                  </TableCell>
                 </TableRow>
-              </TableHeader>
-              <TableBody>
-                {mockShipments.map((shipment) => (
+              ) : filteredShipments.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                    No shipments found matching your criteria
+                  </TableCell>
+                </TableRow>
+              ) : (
+                filteredShipments.map((shipment) => (
                   <TableRow key={shipment.id}>
-                    <TableCell>{new Date(shipment.date).toLocaleDateString()}</TableCell>
+                    <TableCell className="font-medium">
+                      {format(new Date(shipment.date), "MMM d, yyyy")}
+                    </TableCell>
                     <TableCell>{shipment.buyerName}</TableCell>
+                    <TableCell>{shipment.containerNumber || "—"}</TableCell>
+                    <TableCell>{shipment.vesselName || "—"}</TableCell>
                     <TableCell>
-                      <div className="flex items-center">
-                        {shipment.vesselName && (
-                          <span className="flex items-center mr-2">
-                            <Ship className="h-4 w-4 mr-1" />
-                            {shipment.vesselName}
-                          </span>
-                        )}
-                        {shipment.containerNumber && (
-                          <span className="flex items-center">
-                            <Box className="h-4 w-4 mr-1" />
-                            {shipment.containerNumber}
-                          </span>
-                        )}
-                      </div>
+                      <Badge className={getStatusColor(shipment.status || "")}>
+                        {shipment.status || "Unknown"}
+                      </Badge>
                     </TableCell>
-                    <TableCell>{shipment.entriesCount} items</TableCell>
-                    <TableCell className="font-medium">${shipment.totalValue.toFixed(2)}</TableCell>
-                    <TableCell>
-                      <div className="flex gap-2">
-                        <Button variant="outline" size="sm">View</Button>
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          onClick={() => handleExportToExcel(shipment.id)}
-                        >
-                          <Download className="h-4 w-4 mr-1" />
-                          Export
-                        </Button>
-                      </div>
+                    <TableCell className="text-right">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleExportToExcel(shipment.id)}
+                      >
+                        <Download className="h-4 w-4 mr-1" />
+                        Export
+                      </Button>
                     </TableCell>
                   </TableRow>
-                ))}
-
-                {mockShipments.length === 0 && (
-                  <TableRow>
-                    <TableCell colSpan={6} className="h-24 text-center">
-                      No shipments found.
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </div>
+                ))
+              )}
+            </TableBody>
+          </Table>
         </CardContent>
       </Card>
-      
-      {/* Shipment Form Dialog */}
-      <ShipmentForm 
-        open={isShipmentFormOpen} 
-        onClose={() => setIsShipmentFormOpen(false)} 
-      />
-    </DashboardLayout>
+
+      {isShipmentFormOpen && (
+        <ShipmentForm
+          open={isShipmentFormOpen}
+          onClose={() => setIsShipmentFormOpen(false)}
+          onSuccess={() => {
+            setIsShipmentFormOpen(false);
+            fetchShipments();
+          }}
+        />
+      )}
+    </>
   );
 }

@@ -1,0 +1,1198 @@
+// Removed DashboardLayout import
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { ExportButtons } from "@/components/ExportButtons";
+import { FileDown, Download, Calendar, Filter, Trash2, X, Check, FileText, FileSpreadsheet, File } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useApp } from "@/contexts/AppContext";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { DatePicker } from "@/components/ui/date-picker";
+import { useState, useEffect } from "react";
+import { DateFilter, ExportFormat, FishPurchase } from "@/types";
+import { toast } from "sonner";
+import ExcelJS from 'exceljs';
+import { saveAs } from 'file-saver';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { Checkbox } from "@/components/ui/checkbox";
+import pdfMake from 'pdfmake/build/pdfmake';
+import pdfFonts from 'pdfmake/build/vfs_fonts';
+pdfMake.vfs = pdfFonts.vfs;
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose } from "@/components/ui/dialog";
+
+// Interface for purchase groups organized by entry sessions
+interface PurchaseEntrySession {
+  id: string;
+  date: string;
+  buyerName: string;
+  companyName: string;
+  purchases: FishPurchase[];
+  totalAmount: number;
+}
+
+// Mock exported files history to demonstrate delete functionality
+interface ExportedFile {
+  id: string;
+  fileName: string;
+  format: ExportFormat;
+  dateCreated: Date;
+  filterType: DateFilter;
+  recordCount: number;
+}
+
+export default function ExportPage() {
+  const { companyName, purchases } = useApp();
+  const [dateFilter, setDateFilter] = useState<DateFilter>("all");
+  const [startDate, setStartDate] = useState<Date | undefined>(undefined);
+  const [endDate, setEndDate] = useState<Date | undefined>(undefined);
+  const [exportedFiles, setExportedFiles] = useState<ExportedFile[]>([]);
+  const [filteredData, setFilteredData] = useState<FishPurchase[]>([]);
+  // Add state for grouped purchase sessions
+  const [purchaseSessions, setPurchaseSessions] = useState<PurchaseEntrySession[]>([]);
+  // Add state for selected sessions
+  const [selectedSessions, setSelectedSessions] = useState<string[]>([]);
+  const [detailSession, setDetailSession] = useState<PurchaseEntrySession | null>(null);
+
+  // Add new state variables for the invoice header fields
+  const [shipperInfo, setShipperInfo] = useState<string>("AYAAN-YGN");
+  const [destinationInfo, setDestinationInfo] = useState<string>("SH-JED");
+  const [referenceNumber, setReferenceNumber] = useState<string>("FSC-598364-7");
+  const [buyerName, setBuyerName] = useState<string>("CUSTOMER");
+
+  // Add new state variables for the date fields
+  const [shipmentDate, setShipmentDate] = useState<Date | undefined>(undefined);
+
+  // Add new state variable for export format
+  const [exportFormat, setExportFormat] = useState<ExportFormat>('excel');
+
+  // Mock data for exported files
+  useEffect(() => {
+    // We'll populate with some sample data for demonstration
+    setExportedFiles([
+      {
+        id: '1',
+        fileName: `${companyName}_Invoice_2023-10-15.xlsx`,
+        format: 'excel',
+        dateCreated: new Date(2023, 9, 15),
+        filterType: 'month',
+        recordCount: 32
+      },
+      {
+        id: '2',
+        fileName: `${companyName}_Invoice_2023-11-01.xlsx`,
+        format: 'excel',
+        dateCreated: new Date(2023, 10, 1),
+        filterType: 'today',
+        recordCount: 5
+      },
+      {
+        id: '3',
+        fileName: `${companyName}_Purchases_2023-11-05.csv`,
+        format: 'csv',
+        dateCreated: new Date(2023, 10, 5),
+        filterType: 'week',
+        recordCount: 12
+      }
+    ]);
+  }, [companyName]);
+
+  // Debug whenever dateFilter changes
+  useEffect(() => {
+    console.log("Date filter changed to:", dateFilter);
+  }, [dateFilter]);
+
+  // Apply date filtering directly
+  const filterPurchasesByDate = (purchases: FishPurchase[], dateFilter: DateFilter): FishPurchase[] => {
+    if (!dateFilter || dateFilter === 'all') {
+      return purchases;
+    }
+
+    // Get today's date at midnight
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // Format today's date as YYYY-MM-DD for comparison
+    const todayStr = formatDateStr(today);
+    console.log("Today's date:", todayStr);
+
+    // Show a few purchase dates for debugging
+    console.log("FIRST FEW PURCHASE DATES:");
+    purchases.slice(0, 3).forEach(p => {
+      console.log(`ID: ${p.id}, Date: ${p.purchaseDate || p.date}, Formatted: ${formatDateStr(new Date(p.purchaseDate || p.date))}`);
+    });
+
+    let filteredPurchases = [...purchases];
+
+    if (dateFilter === 'today') {
+      // Fix today's date filtering by comparing just the date part (YYYY-MM-DD)
+      const todayYear = today.getFullYear();
+      const todayMonth = today.getMonth();
+      const todayDay = today.getDate();
+
+      filteredPurchases = purchases.filter(p => {
+        const purchaseDate = new Date(p.purchaseDate || p.date);
+        return (
+          purchaseDate.getFullYear() === todayYear &&
+          purchaseDate.getMonth() === todayMonth &&
+          purchaseDate.getDate() === todayDay
+        );
+      });
+
+      console.log(`Found ${filteredPurchases.length} purchases for today (${todayStr})`);
+
+      if (filteredPurchases.length === 0) {
+        toast.error(`No purchases found for today. Please check your data entry date.`);
+      }
+    }
+    else if (dateFilter === 'yesterday') {
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      const yesterdayYear = yesterday.getFullYear();
+      const yesterdayMonth = yesterday.getMonth();
+      const yesterdayDay = yesterday.getDate();
+
+      filteredPurchases = purchases.filter(p => {
+        const purchaseDate = new Date(p.purchaseDate || p.date);
+        return (
+          purchaseDate.getFullYear() === yesterdayYear &&
+          purchaseDate.getMonth() === yesterdayMonth &&
+          purchaseDate.getDate() === yesterdayDay
+        );
+      });
+    }
+    else if (dateFilter === 'week') {
+      const weekAgo = new Date();
+      weekAgo.setDate(weekAgo.getDate() - 7);
+
+      filteredPurchases = purchases.filter(p => {
+        const purchaseDate = new Date(p.purchaseDate || p.date);
+        return purchaseDate >= weekAgo && purchaseDate <= today;
+      });
+    }
+    else if (dateFilter === 'month') {
+      const monthAgo = new Date();
+      monthAgo.setMonth(monthAgo.getMonth() - 1);
+
+      filteredPurchases = purchases.filter(p => {
+        const purchaseDate = new Date(p.purchaseDate || p.date);
+        return purchaseDate >= monthAgo && purchaseDate <= today;
+      });
+    }
+
+    return filteredPurchases;
+  };
+
+  // Function to group purchases into separate entry sessions
+  const groupPurchasesIntoSessions = (purchases: FishPurchase[]): PurchaseEntrySession[] => {
+    // Use a map to group purchases by their date+company+buyer combination
+    const sessionsMap = new Map<string, FishPurchase[]>();
+    
+    purchases.forEach(purchase => {
+      const date = purchase.purchaseDate || purchase.date;
+      // Create a unique key for each session based on date+company+buyer+toasterId
+      // Note: toasterId is a unique ID generated during data entry session
+      const sessionKey = `${date}-${purchase.companyName}-${purchase.buyerName}-${purchase.toasterId || ''}`;
+      
+      if (!sessionsMap.has(sessionKey)) {
+        sessionsMap.set(sessionKey, []);
+      }
+      
+      sessionsMap.get(sessionKey)!.push(purchase);
+    });
+    
+    // Convert the map to an array of PurchaseEntrySession objects
+    const result: PurchaseEntrySession[] = [];
+    let counter = 1;
+    
+    sessionsMap.forEach((sessionPurchases, key) => {
+      if (sessionPurchases.length > 0) {
+        const firstPurchase = sessionPurchases[0];
+        const totalAmount = sessionPurchases.reduce((sum, p) => sum + (p.totalPrice || 0), 0);
+        
+        result.push({
+          id: key,
+          date: firstPurchase.purchaseDate || firstPurchase.date,
+          buyerName: firstPurchase.buyerName || buyerName,
+          companyName: firstPurchase.companyName,
+          purchases: sessionPurchases,
+          totalAmount
+        });
+        counter++;
+      }
+    });
+    
+    // Sort sessions by date (newest first)
+    return result.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  };
+
+  // Update filtered data whenever the date filter changes
+  useEffect(() => {
+    const filtered = filterPurchasesByDate(purchases, dateFilter);
+    setFilteredData(filtered);
+    
+    // Group filtered purchases into separate entry sessions
+    const grouped = groupPurchasesIntoSessions(filtered);
+    setPurchaseSessions(grouped);
+    
+    console.log(`Filter changed to ${dateFilter}: Found ${filtered.length} records in ${grouped.length} entry sessions`);
+  }, [dateFilter, purchases, startDate, endDate]);
+
+  // Delete an exported file
+  const deleteExportedFile = (id: string) => {
+    setExportedFiles(prev => prev.filter(file => file.id !== id));
+    toast.success("File deleted successfully");
+  };
+
+  // Format date as YYYY-MM-DD for string comparison
+  const formatDateStr = (date: Date): string => {
+    try {
+      return date.toISOString().split('T')[0];
+    } catch (e) {
+      console.error("Invalid date:", date);
+      return "";
+    }
+  };
+
+  // Format date for display
+  const formatDisplayDate = (date: Date): string => {
+    return new Intl.DateTimeFormat('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    }).format(date);
+  };
+
+  // Function to group purchases into separate entry sessions
+  const groupPurchasesIntoSessions = (purchases: FishPurchase[]): PurchaseEntrySession[] => {
+    // Use a map to group purchases by their date+company+buyer combination
+    const sessionsMap = new Map<string, FishPurchase[]>();
+    
+    purchases.forEach(purchase => {
+      const date = purchase.purchaseDate || purchase.date;
+      // Create a unique key for each session based on date+company+buyer+toasterId
+      // Note: toasterId is a unique ID generated during data entry session
+      const sessionKey = `${date}-${purchase.companyName}-${purchase.buyerName}-${purchase.toasterId || ''}`;
+      
+      if (!sessionsMap.has(sessionKey)) {
+        sessionsMap.set(sessionKey, []);
+      }
+      
+      sessionsMap.get(sessionKey)!.push(purchase);
+    });
+    
+    // Convert the map to an array of PurchaseEntrySession objects
+    const result: PurchaseEntrySession[] = [];
+    let counter = 1;
+    
+    sessionsMap.forEach((sessionPurchases, key) => {
+      if (sessionPurchases.length > 0) {
+        const firstPurchase = sessionPurchases[0];
+        const totalAmount = sessionPurchases.reduce((sum, p) => sum + (p.totalPrice || 0), 0);
+        
+        result.push({
+          id: key,
+          date: firstPurchase.purchaseDate || firstPurchase.date,
+          buyerName: firstPurchase.buyerName || buyerName,
+          companyName: firstPurchase.companyName,
+          purchases: sessionPurchases,
+          totalAmount
+        });
+        counter++;
+      }
+    });
+    
+    // Sort sessions by date (newest first)
+    return result.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  };
+
+  // Handle session selection toggle
+  const toggleSessionSelection = (sessionId: string) => {
+    setSelectedSessions(prev => 
+      prev.includes(sessionId)
+        ? prev.filter(id => id !== sessionId)
+        : [...prev, sessionId]
+    );
+  };
+
+  // Select all sessions
+  const selectAllSessions = () => {
+    if (selectedSessions.length === purchaseSessions.length) {
+      // If all are selected, deselect all
+      setSelectedSessions([]);
+    } else {
+      // Otherwise select all
+      setSelectedSessions(purchaseSessions.map(session => session.id));
+    }
+  };
+
+  // Handle direct export using the filteredData
+  const handleDirectExport = (format: ExportFormat) => {
+    // Get the purchases from selected sessions
+    let sessionsToExport: PurchaseEntrySession[] = [];
+    if (selectedSessions.length === 0) {
+      sessionsToExport = purchaseSessions;
+    } else {
+      sessionsToExport = purchaseSessions.filter(session => selectedSessions.includes(session.id));
+    }
+    const dataToExport: FishPurchase[] = sessionsToExport.flatMap(session => session.purchases);
+    if (dataToExport.length === 0) {
+      toast.error(`No purchases found in selected tables`);
+      return;
+    }
+    // Export based on the format
+    const loadingToastId = toast.loading(`Preparing ${format.toUpperCase()} export...`);
+    setTimeout(() => {
+      try {
+        let fileName = '';
+        switch (format) {
+          case 'excel':
+          case 'xlsx':
+            fileName = exportSelectedSessionsToExcel(sessionsToExport, companyName);
+            break;
+          case 'csv': {
+            // Use the download button in ExportButtons component
+            const csvButton = document.querySelector(".ExportButtons button:nth-child(2)") as HTMLButtonElement;
+            if (csvButton) csvButton.click();
+            else toast.error("CSV export button not found");
+            fileName = `${companyName.replace(/\s+/g, '_')}_Purchases_${new Date().toISOString().split('T')[0]}.csv`;
+          }
+            break;
+          case 'pdf':
+            exportSelectedSessionsToPDF(sessionsToExport, companyName);
+            fileName = `${companyName.replace(/\s+/g, '_')}_Invoice_${new Date().toISOString().split('T')[0]}.pdf`;
+            break;
+        }
+        // Add to exported files list
+        const newExportedFile: ExportedFile = {
+          id: Date.now().toString(),
+          fileName,
+          format,
+          dateCreated: new Date(),
+          filterType: dateFilter,
+          recordCount: dataToExport.length
+        };
+        setExportedFiles(prev => [newExportedFile, ...prev]);
+        toast.dismiss(loadingToastId);
+        toast.success(`${format.toUpperCase()} export completed successfully`);
+      } catch (error) {
+        console.error(`Export error:`, error);
+        toast.dismiss(loadingToastId);
+        toast.error(`Failed to export as ${format.toUpperCase()}`);
+      }
+    }, 500);
+  };
+
+  // Export selected sessions to Excel in the format of a commercial invoice
+  const exportSelectedSessionsToExcel = (sessions: PurchaseEntrySession[], companyName: string): string => {
+    const workbook = new ExcelJS.Workbook();
+    workbook.creator = companyName;
+    workbook.lastModifiedBy = companyName;
+    workbook.created = new Date();
+    workbook.modified = new Date();
+    
+    // Generate filename
+    const fileName = `${companyName.replace(/\s+/g, '_')}_Invoice_${new Date().toISOString().split('T')[0]}.xlsx`;
+
+    sessions.forEach((session, index) => {
+      const worksheetName = `Invoice ${index + 1}`;
+      const worksheet = workbook.addWorksheet(worksheetName, {
+        pageSetup: {
+          paperSize: 9, // A4
+          orientation: 'portrait',
+          fitToPage: true,
+          fitToWidth: 1,
+          fitToHeight: 0,
+          margins: { left: 0.4, right: 0.4, top: 0.4, bottom: 0.4, header: 0.2, footer: 0.2 },
+          printArea: 'A1:H50' // Print area for A4
+        }
+      });
+
+      // Set column widths to fit A4 and avoid ####
+      worksheet.columns = [
+        { header: 'NO', key: 'no', width: 4 },
+        { header: 'ITEM', key: 'item', width: 12 },
+        { header: 'DESCRIPTION', key: 'description', width: 12 },
+        { header: 'NET KG PER MC', key: 'netKgPerMc', width: 12 },
+        { header: 'QTY MC', key: 'qtyMc', width: 7 },
+        { header: 'QTY KGS', key: 'qtyKgs', width: 9 },
+        { header: 'PRICE (KG)', key: 'pricePerKg', width: 10 },
+        { header: 'TOTAL USD AMOUNT', key: 'totalAmount', width: 18 }
+      ];
+
+      // Header rows - Company and Invoice Information
+      worksheet.mergeCells('A1:H1');
+      const titleCell = worksheet.getCell('A1');
+      titleCell.value = 'COMMERCIAL INVOICE';
+      titleCell.font = { bold: true, size: 16, underline: true };
+      titleCell.alignment = { horizontal: 'center' };
+      titleCell.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FFFFFF' } // White background
+      };
+      
+      // Shipper and Date Information - Row 2
+      // Cell A2-B2: Shipper
+      worksheet.mergeCells('A2:B2');
+      const shipperCell = worksheet.getCell('A2');
+      shipperCell.value = shipperInfo || 'AYAAN-YGN';
+      shipperCell.font = { bold: true, size: 10 };
+      shipperCell.alignment = { horizontal: 'left', vertical: 'middle' };
+      shipperCell.border = { top: {style:'thin'}, left: {style:'thin'}, bottom: {style:'thin'}, right: {style:'thin'} };
+      
+      // Format date as DD-MM-YYYY
+      const today = shipmentDate || new Date();
+      const formattedDate = `${today.getDate().toString().padStart(2, '0')}-${(today.getMonth() + 1).toString().padStart(2, '0')}-${today.getFullYear()}`;
+      
+      // Cell C2-E2: Destination-Date
+      worksheet.mergeCells('C2:E2');
+      const destDateCell = worksheet.getCell('C2');
+      destDateCell.value = `${destinationInfo}-${formattedDate}`;
+      destDateCell.font = { size: 10 };
+      destDateCell.alignment = { horizontal: 'left', vertical: 'middle' };
+      destDateCell.border = { top: {style:'thin'}, left: {style:'thin'}, bottom: {style:'thin'}, right: {style:'thin'} };
+      
+      // Cell F2-G2: Reference Number
+      worksheet.mergeCells('F2:G2');
+      const refCell = worksheet.getCell('F2');
+      refCell.value = referenceNumber || '6-11/SUPNO-06-11-23';
+      refCell.font = { size: 10 };
+      refCell.alignment = { horizontal: 'right', vertical: 'middle' };
+      refCell.border = { top: {style:'thin'}, left: {style:'thin'}, bottom: {style:'thin'}, right: {style:'thin'} };
+      
+      // Cell H2: Session ID
+      const sessionCell = worksheet.getCell('H2');
+      sessionCell.value = session.id.substring(0, 12) || 'PSCL-598184.7';
+      sessionCell.font = { size: 10 };
+      sessionCell.alignment = { horizontal: 'right', vertical: 'middle' };
+      sessionCell.border = { top: {style:'thin'}, left: {style:'thin'}, bottom: {style:'thin'}, right: {style:'thin'} };
+      
+      // Buyer Information - Row 3
+      worksheet.mergeCells('A3:H3');
+      const buyerCell = worksheet.getCell('A3');
+      buyerCell.value = `BUYER: ${session.buyerName || buyerName || 'ali ahmed'}`;
+      buyerCell.font = { bold: true, size: 10 };
+      buyerCell.alignment = { horizontal: 'left', vertical: 'middle' };
+      buyerCell.border = { top: {style:'thin'}, left: {style:'thin'}, bottom: {style:'thin'}, right: {style:'thin'} };
+      
+      // Add table headers with styling - Row 4
+      const headerRow = worksheet.addRow(['NO', 'ITEM', 'DESCRIPTION', 'NET KG PER MC', 'QTY MC', 'QTY KGS', 'PRICE (KG)', 'TOTAL USD AMOUNT']);
+      headerRow.height = 20; // Slightly taller header row
+      
+      headerRow.eachCell((cell) => {
+        cell.font = { bold: true, size: 10 };
+        cell.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: 'E0E0E0' } // Light gray background
+        };
+        cell.border = {
+          top: { style: 'thin' },
+          left: { style: 'thin' },
+          bottom: { style: 'thin' },
+          right: { style: 'thin' }
+        };
+        cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+      });
+      
+      // Group purchases by fish type for better organization
+      const fishTypeGroups: Record<string, FishPurchase[]> = {};
+      session.purchases.forEach(purchase => {
+        if (!fishTypeGroups[purchase.fishName]) {
+          fishTypeGroups[purchase.fishName] = [];
+        }
+        fishTypeGroups[purchase.fishName].push(purchase);
+      });
+      
+      let itemNumber = 1;
+      let grandTotal = 0;
+      let grandQtyMc = 0;
+      let grandQtyKgs = 0;
+      
+      // Add data rows for each fish type
+      Object.entries(fishTypeGroups).forEach(([fishType, purchases]) => {
+        // Add fish type as a main item
+        const fishTypeRow = worksheet.addRow([itemNumber.toString(), fishType, '', '', '', '', '', '']);
+        fishTypeRow.height = 20; // Standard row height
+        
+        // Style the fish type row
+        fishTypeRow.eachCell((cell, colNumber) => {
+          cell.border = {
+            top: { style: 'thin' },
+            left: { style: 'thin' },
+            bottom: { style: 'thin' },
+            right: { style: 'thin' }
+          };
+          
+          if (colNumber === 1 || colNumber === 2) {
+            cell.font = { bold: true };
+          }
+        });
+        
+        itemNumber++;
+        
+        // Sort purchases by size (descending)
+        const sortedPurchases = [...purchases].sort((a, b) => {
+          const sizeA = parseFloat(a.sizeKg?.toString() || '0');
+          const sizeB = parseFloat(b.sizeKg?.toString() || '0');
+          return sizeB - sizeA; // Descending order
+        });
+        
+        // Add purchases for this fish type
+        let fishTypeTotal = 0;
+        let fishTypeQtyMc = 0;
+        let fishTypeQtyKgs = 0;
+        
+        sortedPurchases.forEach((purchase) => {
+          // Calculate values
+          const netKgPerMc = purchase.sizeKg || 0;
+          const qtyMc = purchase.quantity || 0;
+          const qtyKgs = netKgPerMc * qtyMc;
+          const pricePerKg = purchase.pricePerUnit || 0;
+          const totalAmount = qtyKgs * pricePerKg;
+          
+          fishTypeTotal += totalAmount;
+          fishTypeQtyMc += qtyMc;
+          fishTypeQtyKgs += qtyKgs;
+          grandQtyMc += qtyMc;
+          grandQtyKgs += qtyKgs;
+          
+          // Add row
+          const purchaseRow = worksheet.addRow([
+            '', // No number for individual items
+            '', // No item name for individual items
+            `${purchase.sizeKg} UP`, // Size as description
+            netKgPerMc.toFixed(1),
+            qtyMc.toString(),
+            qtyKgs.toFixed(1),
+            pricePerKg.toFixed(2),
+            totalAmount.toFixed(2)
+          ]);
+          
+          // Style the row
+          purchaseRow.eachCell((cell, colNumber) => {
+            cell.border = {
+              top: { style: 'thin' },
+              left: { style: 'thin' },
+              bottom: { style: 'thin' },
+              right: { style: 'thin' }
+            };
+            
+            // Align numbers to the right
+            if (colNumber >= 4) {
+              cell.alignment = { horizontal: 'right', vertical: 'middle' };
+            } else {
+              cell.alignment = { vertical: 'middle' };
+            }
+          });
+          
+          // Format numbers
+          purchaseRow.getCell(4).numFmt = '0.0';
+          purchaseRow.getCell(6).numFmt = '0.0';
+          purchaseRow.getCell(7).numFmt = '0.00';
+          purchaseRow.getCell(8).numFmt = '0.00';
+        });
+        
+        // Add subtotal row for this fish type
+        const subtotalRow = worksheet.addRow([
+          '', 
+          'Sub Total',
+          '',
+          '',
+          fishTypeQtyMc.toString(),
+          fishTypeQtyKgs.toFixed(1),
+          '',
+          fishTypeTotal.toFixed(2)
+        ]);
+        
+        // Style the subtotal row
+        subtotalRow.eachCell((cell, colNumber) => {
+          cell.border = {
+            top: { style: 'thin' },
+            left: { style: 'thin' },
+            bottom: { style: 'thin' },
+            right: { style: 'thin' }
+          };
+          
+          if (colNumber === 2) {
+            cell.font = { bold: true };
+            cell.alignment = { horizontal: 'right', vertical: 'middle' };
+          }
+          
+          if (colNumber >= 5) {
+            cell.font = { bold: true };
+            cell.alignment = { horizontal: 'right', vertical: 'middle' };
+          }
+        });
+        
+        // Format numbers in subtotal
+        subtotalRow.getCell(5).numFmt = '0';
+        subtotalRow.getCell(6).numFmt = '0.0';
+        subtotalRow.getCell(8).numFmt = '0.00';
+        
+        // Add to grand total
+        grandTotal += fishTypeTotal;
+        
+        // Add a blank row after each fish type (with borders)
+        const blankRow = worksheet.addRow(['', '', '', '', '', '', '', '']);
+        blankRow.eachCell((cell) => {
+          cell.border = {
+            top: { style: 'thin' },
+            left: { style: 'thin' },
+            bottom: { style: 'thin' },
+            right: { style: 'thin' }
+          };
+        });
+      });
+      
+      // Add grand total row
+      const grandTotalRow = worksheet.addRow([
+        '',
+        'Grand Total',
+        '',
+        '',
+        grandQtyMc.toString(),
+        grandQtyKgs.toFixed(1),
+        '',
+        grandTotal.toFixed(2)
+      ]);
+      
+      // Style the grand total row
+      grandTotalRow.eachCell((cell, colNumber) => {
+        cell.border = {
+          top: { style: 'thin' },
+          left: { style: 'thin' },
+          bottom: { style: 'thin' },
+          right: { style: 'thin' }
+        };
+        
+        if (colNumber === 2) {
+          cell.font = { bold: true };
+          cell.alignment = { horizontal: 'right', vertical: 'middle' };
+        }
+        
+        if (colNumber === 5 || colNumber === 6) {
+          cell.font = { bold: true };
+          cell.alignment = { horizontal: 'right', vertical: 'middle' };
+        }
+        
+        if (colNumber === 8) {
+          cell.font = { bold: true, color: { argb: 'FF0000' } }; // Red color for total
+          cell.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'F0F0F0' } // Light gray background
+          };
+          cell.numFmt = '0.00';
+          cell.alignment = { horizontal: 'right', vertical: 'middle' };
+        }
+      });
+      
+      // Format numbers in grand total row
+      grandTotalRow.getCell(5).numFmt = '0';
+      grandTotalRow.getCell(6).numFmt = '0.0';
+      grandTotalRow.getCell(8).numFmt = '0.00';
+      
+      // Set row heights for better spacing
+      worksheet.eachRow((row, rowNumber) => {
+        if (rowNumber > 4) { // Skip header rows
+          row.height = 18; // Standard height for data rows
+        }
+      });
+      
+      // Apply borders to all cells in the table
+      for (let i = 1; i <= worksheet.rowCount; i++) {
+        const row = worksheet.getRow(i);
+        row.eachCell((cell) => {
+          if (!cell.border) {
+            cell.border = {
+              top: { style: 'thin' },
+              left: { style: 'thin' },
+              bottom: { style: 'thin' },
+              right: { style: 'thin' }
+            };
+          }
+        });
+      }
+    });
+
+    // Save the workbook
+    workbook.xlsx.writeBuffer().then(buffer => {
+      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      saveAs(blob, fileName);
+    }).catch(err => {
+      console.error("Error generating Excel buffer:", err);
+      toast.error("Error generating Excel file");
+    });
+    
+    return fileName;
+  };
+
+  // PDF Export function
+
+  // PDF Export function
+  const exportSelectedSessionsToPDF = (sessions: PurchaseEntrySession[], companyName: string) => {
+    const docDefinition = {
+      pageSize: 'A4',
+      pageOrientation: 'portrait',
+      pageMargins: [24, 32, 24, 32],
+      content: [],
+      styles: {
+        header: { fontSize: 16, bold: true, alignment: 'center', decoration: 'underline', margin: [0, 0, 0, 8] },
+        info: { fontSize: 10, margin: [0, 0, 0, 2] },
+        company: { fontSize: 12, bold: true, color: 'red', margin: [0, 0, 0, 2] },
+        buyer: { fontSize: 11, bold: true, color: 'red', margin: [0, 0, 0, 6] },
+        tableHeader: { fillColor: '#E0E0E0', bold: true, fontSize: 10, alignment: 'center' },
+        cell: { fontSize: 10, alignment: 'center' },
+        subtotal: { fillColor: '#E0E0E0', bold: true, fontSize: 10, alignment: 'right' },
+        grandtotal: { fillColor: '#F8CCCC', bold: true, fontSize: 11, alignment: 'right', color: 'red' },
+        right: { alignment: 'right' },
+        left: { alignment: 'left' },
+        center: { alignment: 'center' },
+      },
+      defaultStyle: { fontSize: 10 },
+    };
+
+    sessions.forEach((session, idx) => {
+      // Header
+      docDefinition.content.push(
+        { text: 'COMMERCIAL INVOICE', style: 'header' },
+        {
+          columns: [
+            { text: 'AYAAN-YGN', style: 'info', width: '25%' },
+            { text: formatDateStr(startDate || new Date()), style: 'info', alignment: 'center', width: '25%' },
+            { text: formatDateStr(endDate || new Date()), style: 'info', alignment: 'right', width: '50%' },
+          ],
+          margin: [0, 0, 0, 0],
+        },
+        {
+          columns: [
+            { text: companyName, style: 'company', width: '50%' },
+            { text: referenceNumber, style: 'info', alignment: 'right', width: '50%' },
+          ],
+          margin: [0, 0, 0, 0],
+        },
+        { text: `BUYER : ${session.buyerName}`, style: 'buyer' }
+      );
+
+      // Table header
+      const tableBody = [
+        [
+          { text: 'NO', style: 'tableHeader' },
+          { text: 'ITEM', style: 'tableHeader' },
+          { text: 'DESCRIPTION', style: 'tableHeader' },
+          { text: 'NET KG PER MC', style: 'tableHeader' },
+          { text: 'QTY MC', style: 'tableHeader' },
+          { text: 'QTY KGS', style: 'tableHeader' },
+          { text: 'PRICE (KG) FOB YNG', style: 'tableHeader' },
+          { text: 'TOTAL USD AMOUNT', style: 'tableHeader' },
+        ],
+      ];
+
+      // Group by fish name
+      const fishGroups = Array.from(
+        session.purchases.reduce((map, p) => {
+          if (!map.has(p.fishName)) map.set(p.fishName, []);
+          map.get(p.fishName).push(p);
+          return map;
+        }, new Map<string, FishPurchase[]>())
+      );
+
+      let itemNo = 1;
+      let grandQtyMc = 0, grandQtyKgs = 0, grandTotal = 0;
+
+      for (const [fishName, group] of fishGroups) {
+        let groupQtyMc = 0, groupQtyKgs = 0, groupTotal = 0;
+        group.forEach((p, idx) => {
+          const netKgPerMc = Math.round(p.sizeKg * 20);
+          const qtyMc = p.quantity;
+          const qtyKgs = netKgPerMc * qtyMc;
+          const pricePerKg = p.pricePerUnit;
+          const totalAmount = qtyKgs * pricePerKg;
+          groupQtyMc += qtyMc;
+          groupQtyKgs += qtyKgs;
+          groupTotal += totalAmount;
+          grandQtyMc += qtyMc;
+          grandQtyKgs += qtyKgs;
+          grandTotal += totalAmount;
+          tableBody.push([
+            { text: idx === 0 ? itemNo.toString() : '', style: 'center' },
+            { text: idx === 0 ? fishName : '', style: 'left' },
+            { text: `${p.sizeKg} UP`, style: 'center' },
+            { text: netKgPerMc.toString(), style: 'center' },
+            { text: qtyMc.toLocaleString(), style: 'right' },
+            { text: qtyKgs.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }), style: 'right' },
+            { text: pricePerKg.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }), style: 'right' },
+            { text: totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }), style: 'right' },
+          ]);
+        });
+        // Subtotal row
+        tableBody.push([
+          { text: '', style: 'center' },
+          { text: '', style: 'left' },
+          { text: '', style: 'center' },
+          { text: 'Sub Total', style: 'subtotal' },
+          { text: groupQtyMc.toLocaleString(), style: 'subtotal' },
+          { text: groupQtyKgs.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }), style: 'subtotal' },
+          { text: '', style: 'right' },
+          { text: groupTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }), style: 'subtotal' },
+        ]);
+        itemNo++;
+      }
+      // Grand total row
+      tableBody.push([
+        { text: '', style: 'center' },
+        { text: '', style: 'left' },
+        { text: '', style: 'center' },
+        { text: 'Grand Total', style: 'grandtotal' },
+        { text: grandQtyMc.toLocaleString(), style: 'grandtotal' },
+        { text: grandQtyKgs.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }), style: 'grandtotal' },
+        { text: '', style: 'right' },
+        { text: grandTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }), style: 'grandtotal' },
+      ]);
+
+      docDefinition.content.push({
+        style: 'tableExample',
+        table: {
+          headerRows: 1,
+          widths: [18, 50, 40, 55, 40, 55, 55, 65],
+          body: tableBody,
+        },
+        layout: {
+          hLineWidth: function () { return 0.7; },
+          vLineWidth: function () { return 0.7; },
+          hLineColor: function () { return '#333'; },
+          vLineColor: function () { return '#333'; },
+          paddingLeft: function () { return 2; },
+          paddingRight: function () { return 2; },
+          paddingTop: function () { return 2; },
+          paddingBottom: function () { return 2; },
+        },
+        margin: [0, 0, 0, 16],
+      });
+      if (idx < sessions.length - 1) {
+        docDefinition.content.push({ text: '', pageBreak: 'after' });
+      }
+    });
+
+    pdfMake.createPdf(docDefinition).download(`${companyName.replace(/\s+/g, '_')}_Invoice_${new Date().toISOString().split('T')[0]}.pdf`);
+  };
+
+  return (
+    <>
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold">Export Data</h1>
+        <p className="text-muted-foreground mt-1">
+          Export your purchase records and invoices in various formats
+        </p>
+      </div>
+
+      {/* Filters and Export Actions */}
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle className="flex items-center text-lg">
+            <FileDown className="h-5 w-5 mr-2" /> Export Filters
+          </CardTitle>
+          <CardDescription>
+            Select date range and format to filter and export your data
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div>
+              <Label htmlFor="dateFilter">Date Filter</Label>
+              <Select value={dateFilter} onValueChange={value => setDateFilter(value as DateFilter)}>
+                <SelectTrigger id="dateFilter">
+                  <SelectValue placeholder="Select date filter" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All</SelectItem>
+                  <SelectItem value="today">Today</SelectItem>
+                  <SelectItem value="yesterday">Yesterday</SelectItem>
+                  <SelectItem value="week">This Week</SelectItem>
+                  <SelectItem value="month">This Month</SelectItem>
+                  <SelectItem value="custom">Custom</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            {dateFilter === 'custom' && (
+              <div className="flex gap-2 items-end">
+                <div>
+                  <Label htmlFor="startDate">Start Date</Label>
+                  <DatePicker date={startDate} onSelect={setStartDate} />
+                </div>
+                <div>
+                  <Label htmlFor="endDate">End Date</Label>
+                  <DatePicker date={endDate} onSelect={setEndDate} />
+                </div>
+              </div>
+            )}
+            <div>
+              <Label htmlFor="format">Export Format</Label>
+              <Select value={exportFormat} onValueChange={value => setExportFormat(value as ExportFormat)}>
+                <SelectTrigger id="format">
+                  <SelectValue placeholder="Select format" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="excel">Excel</SelectItem>
+                  <SelectItem value="csv">CSV</SelectItem>
+                  <SelectItem value="pdf">PDF</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex items-end">
+              <Button className="w-full" onClick={() => handleDirectExport(exportFormat)}>
+                <Download className="h-4 w-4 mr-2" /> Export
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Invoice Information */}
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle className="flex items-center text-lg">
+            <FileText className="h-5 w-5 mr-2" /> Invoice Information
+          </CardTitle>
+          <CardDescription>
+            Enter details to be included in your commercial invoice
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="shipperInfo">Shipper Information</Label>
+              <Input 
+                id="shipperInfo" 
+                value={shipperInfo} 
+                onChange={(e) => setShipperInfo(e.target.value)} 
+                placeholder="e.g., COMPANY-LOCATION" 
+              />
+            </div>
+            <div>
+              <Label htmlFor="destinationInfo">Destination</Label>
+              <Input 
+                id="destinationInfo" 
+                value={destinationInfo} 
+                onChange={(e) => setDestinationInfo(e.target.value)} 
+                placeholder="e.g., DEST-CODE" 
+              />
+            </div>
+            <div>
+              <Label htmlFor="buyerName">Buyer Name</Label>
+              <Input 
+                id="buyerName" 
+                value={buyerName} 
+                onChange={(e) => setBuyerName(e.target.value)} 
+                placeholder="e.g., CUSTOMER NAME" 
+              />
+            </div>
+            <div>
+              <Label htmlFor="referenceNumber">Reference Number</Label>
+              <Input 
+                id="referenceNumber" 
+                value={referenceNumber} 
+                onChange={(e) => setReferenceNumber(e.target.value)} 
+                placeholder="e.g., REF-12345" 
+              />
+            </div>
+            <div>
+              <Label htmlFor="shipmentDate">Shipment Date</Label>
+              <DatePicker date={shipmentDate} onSelect={setShipmentDate} />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Purchase Sessions Table */}
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle className="flex items-center text-lg">
+            <FileText className="h-5 w-5 mr-2" /> Purchase Sessions
+          </CardTitle>
+          <CardDescription>
+            Select sessions to export or view details
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="p-0">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                <TableHead className="w-10 text-center">
+                  <Checkbox
+                    checked={selectedSessions.length === purchaseSessions.length && purchaseSessions.length > 0}
+                    onCheckedChange={() => {
+                      if (selectedSessions.length === purchaseSessions.length) setSelectedSessions([]);
+                      else setSelectedSessions(purchaseSessions.map(s => s.id));
+                    }}
+                    aria-label="Select all sessions"
+                  />
+                </TableHead>
+                <TableHead>Date</TableHead>
+                <TableHead>Buyer</TableHead>
+                <TableHead>Company</TableHead>
+                <TableHead>Records</TableHead>
+                <TableHead>Total Amount</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+              {purchaseSessions.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                    No purchase sessions found for the selected filter
+                  </TableCell>
+                          </TableRow>
+              ) : (
+                purchaseSessions.map((session) => (
+                  <TableRow key={session.id} className="cursor-pointer hover:bg-muted/40" onClick={e => { if (e.target instanceof HTMLInputElement) return; setDetailSession(session); }}>
+                    <TableCell className="text-center" onClick={e => e.stopPropagation()}>
+                      <Checkbox
+                        checked={selectedSessions.includes(session.id)}
+                        onCheckedChange={() => {
+                          setSelectedSessions(prev => prev.includes(session.id)
+                            ? prev.filter(id => id !== session.id)
+                            : [...prev, session.id]);
+                        }}
+                        aria-label={`Select session ${session.id}`}
+                      />
+                    </TableCell>
+                    <TableCell>{formatDisplayDate(new Date(session.date))}</TableCell>
+                    <TableCell>{session.buyerName}</TableCell>
+                    <TableCell>{session.companyName}</TableCell>
+                    <TableCell>{session.purchases.length}</TableCell>
+                    <TableCell>${session.totalAmount.toFixed(2)}</TableCell>
+                    <TableCell className="text-right">
+                      <Button size="sm" variant="outline" onClick={e => { e.stopPropagation(); exportSelectedSessionsToExcel([session], companyName); }}>
+                        <Download className="h-4 w-4 mr-1" /> Export
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+
+      {/* Session Detail Modal */}
+      <Dialog open={!!detailSession} onOpenChange={open => !open && setDetailSession(null)}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Session Details</DialogTitle>
+            <DialogDescription>
+              {detailSession && `${detailSession.companyName} • ${detailSession.buyerName} • ${formatDisplayDate(new Date(detailSession.date))}`}
+            </DialogDescription>
+          </DialogHeader>
+          {detailSession && (
+            <div className="overflow-x-auto">
+              <table className="min-w-full border border-border rounded-lg bg-background">
+                <thead>
+                  <tr className="bg-muted">
+                    <th className="px-3 py-2 border-b border-r border-border text-left font-semibold">#</th>
+                    <th className="px-3 py-2 border-b border-r border-border text-left font-semibold">Fish Name</th>
+                    <th className="px-3 py-2 border-b border-r border-border text-left font-semibold">Size</th>
+                    <th className="px-3 py-2 border-b border-r border-border text-right font-semibold">Quantity</th>
+                    <th className="px-3 py-2 border-b border-r border-border text-right font-semibold">Price/Unit</th>
+                    <th className="px-3 py-2 border-b border-border text-right font-semibold">Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {detailSession.purchases.map((p, idx) => (
+                    <tr key={p.id || idx} className="even:bg-muted/40">
+                      <td className="px-3 py-2 border-b border-r border-border text-sm">{idx + 1}</td>
+                      <td className="px-3 py-2 border-b border-r border-border text-sm">{p.fishName}</td>
+                      <td className="px-3 py-2 border-b border-r border-border text-sm">{p.sizeKg} UP</td>
+                      <td className="px-3 py-2 border-b border-r border-border text-sm text-right">{p.quantity}</td>
+                      <td className="px-3 py-2 border-b border-r border-border text-sm text-right">${p.pricePerUnit?.toFixed(2)}</td>
+                      <td className="px-3 py-2 border-b border-border text-sm text-right">${p.totalPrice?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot>
+                  <tr>
+                    <td colSpan={5} className="px-3 py-2 border-t border-r border-border text-right font-bold text-base">Grand Total</td>
+                    <td className="px-3 py-2 border-t border-border text-right font-bold text-base text-green-700">${detailSession.purchases.reduce((sum, p) => sum + (p.totalPrice || 0), 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                  </tr>
+                </tfoot>
+              </table>
+      </div>
+          )}
+          <DialogClose asChild>
+            <Button className="mt-4 w-full sm:w-auto">Close</Button>
+          </DialogClose>
+        </DialogContent>
+      </Dialog>
+
+      {/* Exported Files Table */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center text-lg">
+            <FileSpreadsheet className="h-5 w-5 mr-2" /> Exported Files
+          </CardTitle>
+          <CardDescription>
+            Download or delete previously exported files
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="p-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>File Name</TableHead>
+                    <TableHead>Format</TableHead>
+                <TableHead>Date Created</TableHead>
+                    <TableHead>Records</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+              {exportedFiles.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                    No exported files found
+                      </TableCell>
+                </TableRow>
+              ) : (
+                exportedFiles.map((file) => (
+                  <TableRow key={file.id}>
+                    <TableCell>{file.fileName}</TableCell>
+                    <TableCell>{file.format.toUpperCase()}</TableCell>
+                      <TableCell>{formatDisplayDate(file.dateCreated)}</TableCell>
+                      <TableCell>{file.recordCount}</TableCell>
+                      <TableCell className="text-right">
+                      <Button size="sm" variant="outline" className="mr-2">
+                        <Download className="h-4 w-4 mr-1" /> Download
+                            </Button>
+                      <Button size="sm" variant="destructive" onClick={() => deleteExportedFile(file.id)}>
+                        <Trash2 className="h-4 w-4 mr-1" /> Delete
+                      </Button>
+                      </TableCell>
+                    </TableRow>
+                ))
+              )}
+                </TableBody>
+              </Table>
+        </CardContent>
+      </Card>
+    </>
+  );
+}

@@ -1,9 +1,13 @@
-
-import { createRoot } from 'react-dom/client'
+import React from 'react'
+import ReactDOM from 'react-dom/client'
 import App from './App.tsx'
-import './index.css'
+import './lib/i18n'; // Initialize i18next
+import './index.css' // Added this line
+import './styles/globals.css'
+import './styles/utilities.css'
 
-const rootElement = document.getElementById("root");
-if (!rootElement) throw new Error("Failed to find the root element");
-
-createRoot(rootElement).render(<App />);
+ReactDOM.createRoot(document.getElementById('root')!).render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>,
+)

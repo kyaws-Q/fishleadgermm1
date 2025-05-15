@@ -1,4 +1,34 @@
+/**
+ * Main types index file
+ * Re-exports all types from domain-specific files
+ */
 
+// Explicitly import and re-export types needed by AppContextProps and to resolve conflicts
+import type { FishPurchase, PaymentStatus, PurchaseGroup, ExportFormat, PurchaseFilters, PurchaseSorting, FishPurchaseInput, FishEntryFormData, PurchaseStats } from './purchase';
+import type { User, UserPreferences, AuthState, AuthAction, LoginCredentials, SignupCredentials, AuthResponse } from './user';
+import type { AppTheme, TableStyle, TimeFrame, ThemeColors, ThemeState, ThemeAction } from './theme';
+import type { ApiState, ApiResponse, PaginatedResponse, QueryParams, DateFilter, SortDirection, ApiStatus } from './api';
+import type { AppError, ErrorType, ValidationError, ErrorState, ErrorAction, ErrorHandlerOptions } from './error';
+import type { Buyer as ShipmentBuyer, Shipment as ShipmentTS, FishEntry as ShipmentFishEntry, GroupedFishEntries, ShipmentWithEntries } from './shipment';
+
+export type {
+  FishPurchase, PaymentStatus, PurchaseGroup, ExportFormat, PurchaseFilters, PurchaseSorting, FishPurchaseInput, FishEntryFormData, PurchaseStats,
+  User, UserPreferences, AuthState, AuthAction, LoginCredentials, SignupCredentials, AuthResponse,
+  AppTheme, TableStyle, TimeFrame, ThemeColors, ThemeState, ThemeAction,
+  ApiState, ApiResponse, PaginatedResponse, QueryParams, DateFilter, SortDirection, ApiStatus,
+  AppError, ErrorType, ValidationError, ErrorState, ErrorAction, ErrorHandlerOptions,
+  ShipmentBuyer, ShipmentTS, ShipmentFishEntry, GroupedFishEntries, ShipmentWithEntries
+};
+
+// Continue to re-export other types from domain files if needed (be cautious of conflicts)
+export * from './purchase';
+export * from './user';
+export * from './theme';
+export * from './api';
+export * from './error';
+export * from './shipment';
+
+// Export types that haven't been moved to domain files yet (or are defined here)
 // Buyer types
 export interface Buyer {
   id: string;
@@ -7,7 +37,7 @@ export interface Buyer {
   created_at: string;
 }
 
-// Shipment types
+// Shipment types (Note: some shipment types are now in ./shipment.ts, check for duplication)
 export interface Shipment {
   id: string;
   user_id: string;
@@ -49,45 +79,16 @@ export interface ShipmentWithDetails {
   grand_total: number;
 }
 
-// For the UI components
-export interface FishEntryFormData {
-  fish_name: string;
-  description: string;
-  net_kg_per_mc: number;
-  qty_mc: number;
-  qty_kgs: number;
-  price_per_kg: number;
-  total_usd: number;
+// Date range type for filtering
+export interface DateRange {
+  start: Date;
+  end: Date;
 }
 
-// Additional types needed for other components
-export type AppTheme = "light" | "dark" | "blue" | "green";
-export type TableStyle = "default" | "bordered" | "striped" | "compact" | "modern" | "excel";
-export type TimeFrame = "today" | "week" | "month" | "year" | "all" | "3months" | "6months";
-export type DateFilter = "all" | "today" | "week" | "month" | "custom" | "yesterday" | "3months" | "year";
-export type SortDirection = "asc" | "desc";
-export type ExportFormat = "excel" | "pdf" | "csv" | "xlsx";
-
-// FishPurchase interface to match what's being used in the components
-export interface FishPurchase {
-  id: string;
-  companyName: string;
-  buyerName: string;
-  date: string;
-  purchaseDate: string;
-  fishName: string;
-  sizeKg: number;
-  quantity: number;
-  pricePerUnit: number;
-  total: number;
-  totalPrice: number;
-}
-
-export interface User {
-  id: string;
-  email: string;
-  name?: string;
-  avatar_url?: string;
+// Chart data types
+export interface ChartDataPoint {
+  name: string;
+  value: number;
 }
 
 // Extended AppContextProps to include all properties used in components
@@ -95,29 +96,49 @@ export interface AppContextProps {
   user: User | null;
   companyName: string;
   setCompanyName: (name: string) => void;
-  appTheme: AppTheme;
-  setAppTheme: (theme: AppTheme) => void;
   tableStyle: TableStyle;
   setTableStyle: (style: TableStyle) => void;
-  addPurchase: (purchase: Omit<FishPurchase, "id" | "total" | "totalPrice">) => void;
+  addPurchase: (purchase: Omit<FishPurchase, "id" | "total" | "totalPrice">) => Promise<void>;
   addMultiplePurchases: (companyName: string, buyerName: string, date: string, entries: Array<{
     fishName: string;
     sizeKg: number;
     quantity: number;
     pricePerUnit: number;
-  }>) => void;
+    paymentStatus?: PaymentStatus;
+  }>) => Promise<void>;
+  updatePurchase?: (purchaseId: string, purchaseData: Partial<Omit<FishPurchase, "id">>) => Promise<void>;
   purchases: FishPurchase[];
-  setPurchases: (purchases: FishPurchase[]) => void;
-  
-  // Added properties to fix component errors
+  setPurchases?: (purchases: FishPurchase[]) => void;
+  updatePurchasePaymentStatus?: (id: string, status: PaymentStatus) => Promise<void>;
+  deletePurchase?: (id: string) => Promise<void>;
+  deletePurchaseGroup?: (groupKey: string) => Promise<void>;
+  recoverPurchase?: (id: string) => Promise<void>;
+  recoverPurchaseGroup?: (groupKey: string) => Promise<void>;
+  deletedPurchases?: FishPurchase[];
+  fetchDeletedPurchases?: () => void;
+
   login?: (email: string, password: string) => Promise<void>;
-  signup?: (email: string, password: string) => Promise<void>;
+  signup?: (email: string, password: string, name?: string) => Promise<void>;
   logout?: () => Promise<void>;
+  updateProfile?: (name: string, email: string) => Promise<void>;
   isLoading?: boolean;
-  timeFrame?: TimeFrame;
-  setTimeFrame?: (timeFrame: TimeFrame) => void;
-  spendingByFishType?: any[];
-  purchasesByMonth?: any[];
+
+  timeFrame: TimeFrame;
+  setTimeFrame: (timeFrame: TimeFrame) => void;
+  dateRange: DateRange;
+  setDateRange: (dateRange: DateRange) => void;
+
+  spendingByFishType?: Record<string, number>;
+  purchasesByMonth?: Record<string, number>;
+  filteredPurchases: FishPurchase[];
+
+  lastUpdated?: Date;
+  isRealTimeEnabled?: boolean;
+  toggleRealTime?: () => void;
+  
+  refreshData?: () => Promise<void>;
+  currency: string;
+  setCurrency: (currency: string) => void;
 }
 
 // Common fish names for dropdown selection
@@ -138,7 +159,7 @@ export const COMMON_FISH_NAMES = [
 export const COMMON_FISH_SIZES = [
   "4 UP",
   "3.5 UP",
-  "3 UP", 
+  "3 UP",
   "2.5 UP",
   "2 UP",
   "1.5 UP",

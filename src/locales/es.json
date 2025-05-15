@@ -1,0 +1,21 @@
+{
+  "appName": "FishLedger",
+  "appSubtitle": "Administre sus compras de pescado con facilidad",
+  "welcomeBack": "Bienvenido de nuevo",
+  "loading": "Cargando...",
+  "termsAndPrivacy": "Al iniciar sesión, acepta nuestros Términos de servicio y Política de privacidad.",
+  "nav_dashboard": "Tablero",
+  "nav_purchases": "Compras",
+  "nav_shipments": "Envíos",
+  "nav_analytics": "Analíticas",
+  "nav_export": "Exportar",
+  "nav_tracker": "Rastreador",
+  "nav_settings": "Configuración",
+  "signOut": "Cerrar Sesión",
+  "signIn": "Iniciar Sesión",
+  "navigationMenuTitle": "Menú de Navegación",
+  "navigationMenuDescription": "Acceda a todas las funciones de la aplicación",
+  "defaultCompanyName": "Compañía de Exportación de Pescado",
+  "notifications": "Notificaciones",
+  "toggleMenu": "Alternar menú"
+} 
